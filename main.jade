@@ -1,0 +1,14 @@
+template(name='layout')
+    .ui.three.item.menu.inverted
+        a.header.item(href='/') Home
+        a.item
+            +loginButtons
+    .ui.container
+        +yield
+
+template(name='posts')
+    +quickForm collection="Posts" id="add" type="insert" validation='blur'
+    each posts
+        h3= tags
+        +markdown
+            #{body}

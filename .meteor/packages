@@ -5,7 +5,18 @@
 # but you can also edit it by hand.
 
 meteor-platform
-autopublish
-insecure
 coffeescript
 mquandalle:jade
+msavin:mongol@1.1.0
+semantic:ui@2.0.5
+flemay:less-autoprefixer
+jeremy:selectize
+iron:router
+accounts-meteor-developer
+iandouglas:accounts-ui-semantic-ui
+aldeed:collection2@2.3.3
+aldeed:autoform
+fabienb4:autoform-semantic-ui
+comerc:autoform-selectize
+perak:markdown
+meteorhacks:kadira
