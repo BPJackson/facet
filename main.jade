@@ -8,7 +8,13 @@ template(name='layout')
 
 template(name='posts')
     +quickForm collection="Posts" id="add" type="insert" validation='blur'
+    each tags
+        .ui.label
+            |#{_id}
+            .detail= count
     each posts
-        h3= tags
-        +markdown
-            #{body}
+        each tags
+            .ui.label
+                |#{this}
+        p= tags
+        p= this

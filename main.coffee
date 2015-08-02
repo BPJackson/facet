@@ -16,11 +16,6 @@ Posts.attachSchema new SimpleSchema
 
 
 @Tags = new Meteor.Collection 'tags'
-Tags.attachSchema new SimpleSchema
-    name:
-        type: String
-    count:
-        type: Number
 
 Router.configure
     layoutTemplate: 'layout'
@@ -33,10 +28,17 @@ Router.route '/',
 
 if Meteor.isClient
     Meteor.subscribe 'posts'
-    Accounts.ui.config
-        dropdownClasses: 'simple'
+    Meteor.subscribe 'tags'
+
+    AutoForm.addHooks 'add',
+        onSuccess: (formType, result) ->
+            Meteor.call 'updateTags'
+            AutoForm.resetForm add
+
+
     Template.posts.helpers
-        posts: -> Posts.find()
+        posts: -> Posts.find().fetch()
+        tags: -> Tags.find()
     Meteor.startup ->
         AutoForm.setDefaultTemplate 'semanticUI'
         AutoForm.debug()
@@ -45,8 +47,23 @@ if Meteor.isClient
 
 if Meteor.isServer
     Meteor.publish 'posts', -> Posts.find()
+    Meteor.publish 'tags', -> Tags.find()
+
     Kadira.connect 'rFvGdJvAfypbQj3uP', '998ed03e-6c4d-4e65-a529-cb9f094bb97f'
     Posts.allow
         insert: -> true
+    Meteor.methods
+        updateTags: ->
+            aggTags = Posts.aggregate([
+                #{ $match: creatorId: @userId }
+                { $project: tags: 1 }
+                { $unwind: '$tags' }
+                { $group: _id: '$tags', count: $sum: 1 }
+                { $project: _id: 1, count: 1 }
+                { $out: 'tags' }
+            ])
+            console.log 'updated tags'
+            aggTags
+
 
     Meteor.startup ->
