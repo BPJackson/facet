@@ -8,13 +8,16 @@ template(name='layout')
 
 template(name='posts')
     +quickForm collection="Posts" id="add" type="insert" validation='blur'
+    +tags
+    .ui.relaxed.divided.list
+        each posts
+            .item
+                each tags
+                    .ui.label
+                        |#{this}
+
+template(name='tags')
     each tags
         .ui.label
             |#{_id}
             .detail= count
-    each posts
-        each tags
-            .ui.label
-                |#{this}
-        p= tags
-        p= this

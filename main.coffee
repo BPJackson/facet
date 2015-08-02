@@ -24,8 +24,6 @@ Router.route '/',
     name: 'root'
     template: 'posts'
 
-
-
 if Meteor.isClient
     Meteor.subscribe 'posts'
     Meteor.subscribe 'tags'
@@ -36,9 +34,12 @@ if Meteor.isClient
             AutoForm.resetForm add
 
 
+    Template.tags.helpers
+        tags: -> Tags.find()
     Template.posts.helpers
         posts: -> Posts.find()
-        tags: -> Tags.find()
+
+
     Meteor.startup ->
         AutoForm.setDefaultTemplate 'semanticUI'
         AutoForm.debug()
@@ -49,12 +50,12 @@ if Meteor.isServer
     Meteor.publish 'posts', -> Posts.find()
     Meteor.publish 'tags', -> Tags.find()
 
-    Kadira.connect 'rFvGdJvAfypbQj3uP', '998ed03e-6c4d-4e65-a529-cb9f094bb97f'
+    #Kadira.connect 'rFvGdJvAfypbQj3uP', '998ed03e-6c4d-4e65-a529-cb9f094bb97f'
     Posts.allow
         insert: -> true
     Meteor.methods
         updateTags: ->
-            aggTags = Posts.aggregate([
+            Posts.aggregate([
                 #{ $match: creatorId: @userId }
                 { $project: tags: 1 }
                 { $unwind: '$tags' }
@@ -62,8 +63,5 @@ if Meteor.isServer
                 { $project: _id: 1, count: 1 }
                 { $out: 'tags' }
             ])
-            console.log 'updated tags'
-            aggTags
-
 
     Meteor.startup ->
