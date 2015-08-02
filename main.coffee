@@ -37,7 +37,7 @@ if Meteor.isClient
 
 
     Template.posts.helpers
-        posts: -> Posts.find().fetch()
+        posts: -> Posts.find()
         tags: -> Tags.find()
     Meteor.startup ->
         AutoForm.setDefaultTemplate 'semanticUI'
