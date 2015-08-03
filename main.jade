@@ -1,15 +1,17 @@
 template(name='layout')
-    .ui.three.item.menu.inverted
-        a.header.item(href='/') Home
-        a.item
-            +loginButtons
+    // .ui.three.item.menu.inverted
+    //     a.header.item(href='/') Home
+    //     a.item
+    //         +loginButtons
     .ui.container
         +yield
 
 template(name='posts')
-    +quickForm collection="Posts" id="add" type="insert" validation='blur'
-    +tags
-    .ui.relaxed.divided.list
+    .ui.segment
+        +quickForm collection="Posts" id="add" type="insert" validation='blur'
+    .ui.segment
+        +tags
+    .ui.relaxed.divided.list.segment
         each posts
             .item
                 each tags
@@ -17,7 +19,13 @@ template(name='posts')
                         |#{this}
 
 template(name='tags')
+    .ui.segment
+        each filter
+            button.ui.button.icon.small
+                i.icon.remove
+            | #{this}
     each tags
-        .ui.label
-            |#{_id}
+        .button.ui.label.ftag
+            span.id= _id
             .detail= count
+

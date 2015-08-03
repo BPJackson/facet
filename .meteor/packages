@@ -7,7 +7,6 @@
 meteor-platform
 coffeescript
 mquandalle:jade
-msavin:mongol@1.1.0
 semantic:ui@2.0.5
 flemay:less-autoprefixer
 jeremy:selectize
@@ -24,3 +23,9 @@ themeteorchef:commonmark
 deanius:promise
 reactive-var
 meteorhacks:aggregate
+constellation:console
+constellation:schema
+babrahams:temple
+constellation:session
+constellation:position
+manuel:reactivearray
