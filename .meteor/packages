@@ -24,7 +24,6 @@ deanius:promise
 reactive-var
 meteorhacks:aggregate
 constellation:console
-constellation:schema
 babrahams:temple
 constellation:session
 constellation:position

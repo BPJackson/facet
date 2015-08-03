@@ -8,7 +8,7 @@ template(name='layout')
 
 template(name='posts')
     .ui.segment
-        +quickForm collection="Posts" id="add" type="insert" validation='blur'
+        +quickForm collection="Posts" id="add" type="insert" validation='blur' buttonContent='Add Post'
     .ui.segment
         +tags
     .ui.relaxed.divided.list.segment

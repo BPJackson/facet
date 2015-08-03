@@ -19,7 +19,6 @@ coffeescript@1.0.6
 comerc:autoform-selectize@2.2.3
 constellation:console@1.2.1
 constellation:position@0.3.2
-constellation:schema@0.3.3
 constellation:session@0.3.2
 dburles:mongo-collection-instances@0.3.4
 ddp@1.1.0
@@ -48,7 +47,6 @@ iron:url@1.0.9
 jeremy:selectize@0.12.1_3
 jquery@1.11.3_2
 json@1.0.3
-juliancwirko:s-alert@2.4.1
 lai:collection-extensions@0.1.4
 launch-screen@1.0.2
 livedata@1.0.13
