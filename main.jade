@@ -1,8 +1,4 @@
 template(name='layout')
-    // .ui.three.item.menu.inverted
-    //     a.header.item(href='/') Home
-    //     a.item
-    //         +loginButtons
     .ui.container
         +yield
 
@@ -14,16 +10,30 @@ template(name='posts')
     .ui.relaxed.divided.list.segment
         each posts
             .item
-                each tags
-                    .ui.label
-                        |#{this}
+                .ui.horizontal.relaxed.list
+                    .item
+                        .ui.tiny.basic.buttons
+                            .ui.button.icon.voteUp
+                                i.icon.thumbs.outline.up
+                            .ui.button.icon.voteDown
+                                i.icon.thumbs.outline.down
+                    .item
+                        .ui.horizontal.list
+                            each tags
+                                .item
+                                    |#{this}
+                    .item
+                        if isOwner
+                            .ui.button.icon.removePost.tiny
+                                i.icon.remove
 
 template(name='tags')
     .ui.segment
-        each filter
-            button.ui.button.icon.small
-                i.icon.remove
-            | #{this}
+        p Current Filter:
+            each filter
+                button.ui.tiny.button.icon.removeTag
+                    i.icon.remove
+                | #{this}
     each tags
         .button.ui.label.ftag
             span.id= _id

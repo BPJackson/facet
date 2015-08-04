@@ -13,6 +13,8 @@ Posts.attachSchema new SimpleSchema
                             value: input
                             text: input
                         }
+    authorID:
+        type: String
 
 
 @Tags = new Meteor.Collection 'tags'
@@ -25,35 +27,39 @@ Router.route '/',
     template: 'posts'
 
 if Meteor.isClient
-    #AutoForm.addHooks 'add',
-        #onSuccess: (formType, result) ->
-            #Meteor.call 'updateTags'
-            #AutoForm.resetForm add
+    AutoForm.addHooks 'add',
+        onSuccess: (formType, result) ->
+            Meteor.call 'updateTags'
+            AutoForm.resetForm add
+        before:
+            insert: (doc) ->
+                @.authorID = Meteor.userId
 
     Meteor.subscribe 'posts'
 
     filter = new ReactiveArray ['food']
 
     Template.tags.onCreated ->
-        arr = filter.array()
-        Meteor.subscribe 'ragcloud', arr
     Template.tags.onRendered ->
-
     Template.tags.helpers
         tags: -> Tags.find {}, sort: count: -1
         filter: -> filter.list()
     Template.tags.events
         'click .ftag': (event, template) -> filter.push @._id
-        'click .button.icon': -> filter.remove @.toString()
-
-    Tracker.autorun ->
-        Meteor.subscribe 'tagcloud',filter.array()
+        'click .removeTag': -> filter.remove @.toString()
 
     Template.posts.helpers
         posts: ->
             if filter.array().length is 0 then Posts.find()
             else Posts.find tags: $all: filter.array()
+        isOwner: -> true
+    Template.posts.events
+        'click .removePost': ->
+            console.log @
+            Meteor.call 'removePost', @._id
 
+    Tracker.autorun ->
+        Meteor.subscribe 'tagcloud',filter.array()
 
     Meteor.startup ->
         AutoForm.setDefaultTemplate 'semanticUI'
@@ -87,6 +93,11 @@ if Meteor.isServer
                     count: e.count
         self.ready()
 
+    Meteor.methods
+        removePost: (postID) -> Posts.remove postID
+
+
     #Kadira.connect 'rFvGdJvAfypbQj3uP', '998ed03e-6c4d-4e65-a529-cb9f094bb97f'
     Posts.allow
         insert: -> true
+        remove: -> true
