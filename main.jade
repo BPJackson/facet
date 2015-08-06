@@ -1,4 +1,18 @@
+head
+    title Gold Run
+    meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+    meta(name='mobile-web-app-capable', content='yes')
+    meta(name='apple-mobile-web-app-capable', content='yes')
+    meta(name='apple-mobile-web-app-status-bar-style', content='black')
+    meta(name='format-detection', content='telephone=no')
+    meta(name='apple-mobile-web-app-title', content='facet')
+
+
+
 template(name='layout')
+    .ui.two.item.menu
+        a.header.item(href='/') Home
+        +loginButtons
     .ui.container
         +yield
 
@@ -10,22 +24,17 @@ template(name='posts')
     .ui.relaxed.divided.list.segment
         each posts
             .item
-                .ui.horizontal.relaxed.list
-                    .item
-                        .ui.tiny.basic.buttons
-                            .ui.button.icon.voteUp
-                                i.icon.thumbs.outline.up
-                            .ui.button.icon.voteDown
-                                i.icon.thumbs.outline.down
-                    .item
-                        .ui.horizontal.list
-                            each tags
-                                .item
-                                    |#{this}
-                    .item
-                        if isOwner
-                            .ui.button.icon.removePost.tiny
-                                i.icon.remove
+                .left.floated.content
+                    .ui.tiny.basic.icon.button.like
+                        i.icon.thumbs.outline.up
+                .ui.horizontal.list
+                    each tags
+                        .item
+                            |#{this}
+                .right.floated.content
+                    if isOwner
+                        .ui.button.icon.removePost.tiny
+                            i.icon.remove
 
 template(name='tags')
     .ui.segment
@@ -34,8 +43,9 @@ template(name='tags')
                 button.ui.tiny.button.icon.removeTag
                     i.icon.remove
                 | #{this}
-    each tags
-        .button.ui.label.ftag
-            span.id= _id
-            .detail= count
-
+    .ui.horizontal.list
+        each tags
+            .item
+                .ui.button.label.ftag
+                    span.id= _id
+                    .detail= count

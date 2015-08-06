@@ -1,3 +1,4 @@
+@Tags = new Meteor.Collection 'tags'
 @Posts = new Meteor.Collection 'posts'
 Posts.attachSchema new SimpleSchema
     tags:
@@ -13,11 +14,6 @@ Posts.attachSchema new SimpleSchema
                             value: input
                             text: input
                         }
-    authorID:
-        type: String
-
-
-@Tags = new Meteor.Collection 'tags'
 
 Router.configure
     layoutTemplate: 'layout'
@@ -26,27 +22,36 @@ Router.route '/',
     name: 'root'
     template: 'posts'
 
+Meteor.methods
+    addPost: (doc) ->
+        post = _.extend doc,
+            userId: user._id,
+            author: user.username,
+            submitted: new Date(),
+            upvoters: [],
+            votes: 0
+    removePost: (postID) -> Posts.remove postID
+    likePost: (postid) ->
+        Posts.update {postid}, {$inc: likes: 1, $addtoset: voters: @.userId}
+        origin = Posts.findOne postid
+        Posts.insert
+            userId: user._id,
+            author: user.username,
+            submitted: new Date(),
+            upvoters: [],
+            votes: 0
+            tags: origin.tags
+
+
 if Meteor.isClient
-    AutoForm.addHooks 'add',
-        onSuccess: (formType, result) ->
-            Meteor.call 'updateTags'
-            AutoForm.resetForm add
-        before:
-            insert: (doc) ->
-                @.authorID = Meteor.userId
-
+    filter = new ReactiveArray []
     Meteor.subscribe 'posts'
+    Tracker.autorun ->
+        Meteor.subscribe 'tagpub',filter.array()
+    Meteor.startup ->
+        AutoForm.setDefaultTemplate 'semanticUI'
+        AutoForm.debug()
 
-    filter = new ReactiveArray ['food']
-
-    Template.tags.onCreated ->
-    Template.tags.onRendered ->
-    Template.tags.helpers
-        tags: -> Tags.find {}, sort: count: -1
-        filter: -> filter.list()
-    Template.tags.events
-        'click .ftag': (event, template) -> filter.push @._id
-        'click .removeTag': -> filter.remove @.toString()
 
     Template.posts.helpers
         posts: ->
@@ -57,19 +62,19 @@ if Meteor.isClient
         'click .removePost': ->
             console.log @
             Meteor.call 'removePost', @._id
+        'click .vote': (e,t) ->
+            Meteor.call 'likePost'
 
-    Tracker.autorun ->
-        Meteor.subscribe 'tagcloud',filter.array()
-
-    Meteor.startup ->
-        AutoForm.setDefaultTemplate 'semanticUI'
-        AutoForm.debug()
-
-
+    Template.tags.helpers
+        tags: -> Tags.find {}, sort: count: -1
+        filter: -> filter.list()
+    Template.tags.events
+        'click .ftag': (event, template) -> filter.push @._id
+        'click .removeTag': -> filter.remove @.toString()
 
 if Meteor.isServer
     Meteor.publish 'posts', -> Posts.find()
-    Meteor.publish 'tagcloud', (filterArray) ->
+    Meteor.publish 'tagpub', (filterArray) ->
         self = @
         if filterArray.length is 0
             tags = Posts.aggregate [
@@ -93,11 +98,6 @@ if Meteor.isServer
                     count: e.count
         self.ready()
 
-    Meteor.methods
-        removePost: (postID) -> Posts.remove postID
-
-
-    #Kadira.connect 'rFvGdJvAfypbQj3uP', '998ed03e-6c4d-4e65-a529-cb9f094bb97f'
     Posts.allow
         insert: -> true
         remove: -> true
