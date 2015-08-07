@@ -7,6 +7,7 @@ Posts.attachSchema new SimpleSchema
             type: "selectize"
             afFieldInput:
                 multiple: true
+                persist: false
                 selectizeOptions:
                     plugins: ['remove_button']
                     create: (input) ->
@@ -14,6 +15,18 @@ Posts.attachSchema new SimpleSchema
                             value: input
                             text: input
                         }
+    author:
+        type: String
+        optional: true
+    votes:
+        type: Number
+        defaultValue: 0
+    upvoters:
+        type: [String]
+        defaultValue: []
+    submitted:
+        type: Date
+        defaultValue: new Date()
 
 Router.configure
     layoutTemplate: 'layout'
@@ -23,28 +36,22 @@ Router.route '/',
     template: 'posts'
 
 Meteor.methods
-    addPost: (doc) ->
-        post = _.extend doc,
-            userId: user._id,
-            author: user.username,
-            submitted: new Date(),
-            upvoters: [],
-            votes: 0
     removePost: (postID) -> Posts.remove postID
     likePost: (postid) ->
-        Posts.update {postid}, {$inc: likes: 1, $addtoset: voters: @.userId}
+        Posts.update {postid}, {$inc: likes: 1, $addtoset: likers: @.userId}
         origin = Posts.findOne postid
         Posts.insert
-            userId: user._id,
-            author: user.username,
-            submitted: new Date(),
-            upvoters: [],
-            votes: 0
+            userId: user._id
+            author: user.username
+            submitted: new Date()
+            likers: []
+            likes: 0
             tags: origin.tags
 
 
 if Meteor.isClient
     filter = new ReactiveArray []
+
     Meteor.subscribe 'posts'
     Tracker.autorun ->
         Meteor.subscribe 'tagpub',filter.array()
@@ -59,17 +66,14 @@ if Meteor.isClient
             else Posts.find tags: $all: filter.array()
         isOwner: -> true
     Template.posts.events
-        'click .removePost': ->
-            console.log @
-            Meteor.call 'removePost', @._id
-        'click .vote': (e,t) ->
-            Meteor.call 'likePost'
+        'click .removePost': -> Meteor.call 'removePost', @._id
+        'click .vote':  -> Meteor.call 'likePost', @._id
 
     Template.tags.helpers
         tags: -> Tags.find {}, sort: count: -1
         filter: -> filter.list()
     Template.tags.events
-        'click .ftag': (event, template) -> filter.push @._id
+        'click .facettag': (event, template) -> filter.push @._id
         'click .removeTag': -> filter.remove @.toString()
 
 if Meteor.isServer

@@ -8,7 +8,6 @@ head
     meta(name='apple-mobile-web-app-title', content='facet')
 
 
-
 template(name='layout')
     .ui.two.item.menu
         a.header.item(href='/') Home
@@ -18,7 +17,7 @@ template(name='layout')
 
 template(name='posts')
     .ui.segment
-        +quickForm collection="Posts" id="add" type="insert" validation='blur' buttonContent='Add Post'
+        +quickForm collection='Posts' id='add' type='insert' fields='tags'
     .ui.segment
         +tags
     .ui.relaxed.divided.list.segment
@@ -46,6 +45,6 @@ template(name='tags')
     .ui.horizontal.list
         each tags
             .item
-                .ui.button.label.ftag
+                .ui.button.blue.label.facettag
                     span.id= _id
                     .detail= count
