@@ -7,44 +7,54 @@ head
     meta(name='format-detection', content='telephone=no')
     meta(name='apple-mobile-web-app-title', content='facet')
 
-
 template(name='layout')
     .ui.two.item.menu
-        a.header.item(href='/') Home
-        +loginButtons
-    .ui.container
+        a.header.item(href='/') Facet
+        .item
+            +loginButtons
+    .ui.container.four.wide
         +yield
+
+template(name='filter')
+    .ui.segment
+        span Author Filter
+        each authorFilter
+            .ui.tiny.button.icon.removeAuthorFilter
+                i.icon.remove
+            | #{this}
+    .ui.segment
+        span Tag Filter
+        each tagFilterList
+            .ui.tiny.button.icon.removeTagFilter
+                i.icon.remove
+            | #{this}
+    .ui.horizontal.list
+        each tags
+            .item
+                .ui.button.blue.label.addCloudTagFilter
+                    |#{_id}
+                    .detail #{count}
 
 template(name='posts')
     .ui.segment
-        +quickForm collection='Posts' id='add' type='insert' fields='tags'
-    .ui.segment
-        +tags
+        +filter
     .ui.relaxed.divided.list.segment
         each posts
             .item
                 .left.floated.content
-                    .ui.tiny.basic.icon.button.like
-                        i.icon.thumbs.outline.up
-                .ui.horizontal.list
-                    each tags
-                        .item
-                            |#{this}
-                .right.floated.content
                     if isOwner
-                        .ui.button.icon.removePost.tiny
+                        .ui.button.negative.circular.icon.removePost.tiny
                             i.icon.remove
-
-template(name='tags')
-    .ui.segment
-        p Current Filter:
-            each filter
-                button.ui.tiny.button.icon.removeTag
-                    i.icon.remove
-                | #{this}
-    .ui.horizontal.list
-        each tags
-            .item
-                .ui.button.blue.label.facettag
-                    span.id= _id
-                    .detail= count
+                    .ui.icon.label.button.vote.positive(class=voteclass)
+                        i.icon.thumbs.up
+                        .detail #{votes}
+                .content
+                    .ui.horizontal.list
+                        each tags
+                            .item
+                                .ui.blue.inverted.button.addPostFilter #{this}
+                    .ui.violet.inverted.button.addAuthorFilter by #{authorname}
+                .right.floated.content
+    if currentUser
+        .ui.segment
+            +quickForm collection='Posts' id='add' type='insert' fields='tags'

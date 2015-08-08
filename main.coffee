@@ -5,23 +5,26 @@ Posts.attachSchema new SimpleSchema
         type: [String]
         autoform:
             type: "selectize"
+            label: 'Add tags'
+            placeholder: 'hit enter after each'
             afFieldInput:
                 multiple: true
-                persist: false
                 selectizeOptions:
                     plugins: ['remove_button']
+                    persist: false
                     create: (input) ->
                         {
                             value: input
                             text: input
                         }
-    author:
+    authorid:
         type: String
-        optional: true
+    authorname:
+        type: String
     votes:
         type: Number
         defaultValue: 0
-    upvoters:
+    voters:
         type: [String]
         defaultValue: []
     submitted:
@@ -30,57 +33,77 @@ Posts.attachSchema new SimpleSchema
 
 Router.configure
     layoutTemplate: 'layout'
-
 Router.route '/',
     name: 'root'
     template: 'posts'
 
 Meteor.methods
-    removePost: (postID) -> Posts.remove postID
-    likePost: (postid) ->
-        Posts.update {postid}, {$inc: likes: 1, $addtoset: likers: @.userId}
+    removePost: (postid) -> Posts.remove postid
+    vote: (postid) ->
+        user = Meteor.user()
+        Posts.update {
+            _id: postid
+            voters: $ne: user._id
+        },
+            $addToSet: voters: user._id
+            $inc: votes: 1
+
         origin = Posts.findOne postid
         Posts.insert
-            userId: user._id
-            author: user.username
-            submitted: new Date()
-            likers: []
-            likes: 0
+            authorid: user._id
+            authorname: user.profile.name
             tags: origin.tags
 
 
 if Meteor.isClient
-    filter = new ReactiveArray []
+    tagFilter = new ReactiveArray []
+    authorFilter = new ReactiveArray []
+    AutoForm.addHooks 'add',
+        before:
+            insert: (doc) ->
+                user = Meteor.user()
+                doc.authorid = user._id
+                doc.authorname = user.profile.name
+                doc
 
     Meteor.subscribe 'posts'
-    Tracker.autorun ->
-        Meteor.subscribe 'tagpub',filter.array()
+    Tracker.autorun -> Meteor.subscribe 'tagpub',tagFilter.array()
     Meteor.startup ->
         AutoForm.setDefaultTemplate 'semanticUI'
         AutoForm.debug()
 
 
+
+
+    Template.filter.helpers
+        tags: -> Tags.find {}, sort: count: -1
+        tagFilterList: -> tagFilter.list()
+        authorFilter: -> authorFilter.list()
+    Template.filter.events
+        'click .addCloudTagFilter':  -> tagFilter.push @_id
+        'click .removeTagFilter': -> tagFilter.remove @toString()
+
+
+
     Template.posts.helpers
         posts: ->
-            if filter.array().length is 0 then Posts.find()
-            else Posts.find tags: $all: filter.array()
-        isOwner: -> true
+            if tagFilter.array().length is 0 then Posts.find()
+            else Posts.find tags: $all: tagFilter.array()
+        isOwner: -> Meteor.userId() is @authorid
+        isVotable: -> Meteor.user() and @authorid is not Meteor.userId()
     Template.posts.events
-        'click .removePost': -> Meteor.call 'removePost', @._id
-        'click .vote':  -> Meteor.call 'likePost', @._id
+        'click .removePost': -> Meteor.call 'removePost', @_id
+        'click .vote':  -> Meteor.call 'vote', @_id
+        'click .addAuthorFilter':  -> authorFilter.push @authorname
+        'click .addPostFilter':  -> tagFilter.push @toString()
 
-    Template.tags.helpers
-        tags: -> Tags.find {}, sort: count: -1
-        filter: -> filter.list()
-    Template.tags.events
-        'click .facettag': (event, template) -> filter.push @._id
-        'click .removeTag': -> filter.remove @.toString()
+
 
 if Meteor.isServer
     Meteor.publish 'posts', -> Posts.find()
-    Meteor.publish 'tagpub', (filterArray) ->
+    Meteor.publish 'tagpub', (tagFilterArray) ->
         self = @
-        if filterArray.length is 0
+        if tagFilterArray.length is 0
             tags = Posts.aggregate [
                 { $project: tags: 1 }
                 { $unwind: '$tags' }
@@ -89,7 +112,7 @@ if Meteor.isServer
             ]
         else
             tags = Posts.aggregate [
-                { $match: tags: $all: filterArray }
+                { $match: tags: $all: tagFilterArray }
                 { $project: tags: 1 }
                 { $unwind: '$tags' }
                 { $group: _id: '$tags', count: $sum: 1 }
