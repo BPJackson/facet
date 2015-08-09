@@ -97,7 +97,6 @@ if Meteor.isClient
         'click .removeTagFilter': -> tagFilter.remove @toString()
         'click .removeAuthorFilter': -> authorFilter.remove @toString()
 
-
     Template.docs.helpers
         docs: -> Docs.find()
         isOwner: -> Meteor.userId() is @authorid
