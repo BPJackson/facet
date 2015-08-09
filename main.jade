@@ -8,53 +8,52 @@ head
     meta(name='apple-mobile-web-app-title', content='facet')
 
 template(name='layout')
-    .ui.two.item.menu
+    .ui.three.item.menu
         a.header.item(href='/') Facet
+        a.item(href='/new') New
         .item
-            +loginButtons
+            +loginButtons align="right"
     .ui.container.four.wide
         +yield
 
 template(name='filter')
-    .ui.segment
-        span Author Filter
+    .ui.horizontal.listS
         each authorFilter
-            .ui.tiny.button.icon.removeAuthorFilter
+            .ui.labeled.icon.button.removeAuthorFilter
+                i.icon.user
+                | #{this}
                 i.icon.remove
-            | #{this}
-    .ui.segment
-        span Tag Filter
         each tagFilterList
-            .ui.tiny.button.icon.removeTagFilter
+            .ui.labeled.icon.basic.button.removeTagFilter
+                | #{this}
                 i.icon.remove
-            | #{this}
-    .ui.horizontal.list
-        each tags
-            .item
-                .ui.button.blue.label.addCloudTagFilter
-                    |#{_id}
-                    .detail #{count}
-
-template(name='posts')
-    .ui.segment
-        +filter
+    +reactiveBlockGrid cursor=tags template='tag' transitionDuration='.5s' layoutMode='fitRows' gutter=20 columnWidth='.gutter-width' cssClass='blocks'
+template(name='docs')
+    +filter
     .ui.relaxed.divided.list.segment
-        each posts
+        each docs
             .item
                 .left.floated.content
+                    .ui.icon.basic.button
+                        i.icon.dropdown
                     if isOwner
-                        .ui.button.negative.circular.icon.removePost.tiny
+                        .ui.button.basic.icon.removeDoc
                             i.icon.remove
-                    .ui.icon.label.button.vote.positive(class=voteclass)
+                    .ui.icon.large.label.basic.button.vote(class=voteclass)
                         i.icon.thumbs.up
                         .detail #{votes}
                 .content
                     .ui.horizontal.list
                         each tags
                             .item
-                                .ui.blue.inverted.button.addPostFilter #{this}
-                    .ui.violet.inverted.button.addAuthorFilter by #{authorname}
-                .right.floated.content
+                                .ui.basic.button.addDocFilter #{this}
+                    .ui.basic.button.addAuthorFilter
+                        i.icon.user
+                        |#{authorname}
     if currentUser
         .ui.segment
-            +quickForm collection='Posts' id='add' type='insert' fields='tags'
+            +quickForm collection='Docs' id='add' type='insert' fields='tags'
+template(name='tag')
+    .ui.addCloudTagFilter.button.basic
+        |#{_id}
+        .detail #{count}
