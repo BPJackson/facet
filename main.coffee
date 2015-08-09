@@ -136,6 +136,7 @@ if Meteor.isServer
             count:tag.count
         self.ready()
 
+
     Docs.allow
         insert: (userId, doc) -> userId
         remove: (userId, doc) -> userId is @authorid
