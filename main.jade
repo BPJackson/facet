@@ -13,8 +13,7 @@ template(name='layout')
         a.item(href='/new') New
         .item
             +loginButtons align="right"
-    .ui.container.four.wide
-        +yield
+    +yield
 
 template(name='filter')
     .ui.horizontal.listS
@@ -29,31 +28,33 @@ template(name='filter')
                 i.icon.remove
     +reactiveBlockGrid cursor=tags template='tag' transitionDuration='.5s' layoutMode='fitRows' gutter=20 columnWidth='.gutter-width' cssClass='blocks'
 template(name='docs')
-    +filter
-    .ui.relaxed.divided.list.segment
-        each docs
-            .item
-                .left.floated.content
-                    .ui.icon.basic.button
-                        i.icon.dropdown
-                    if isOwner
-                        .ui.button.basic.icon.removeDoc
-                            i.icon.remove
-                    .ui.icon.large.label.basic.button.vote(class=voteclass)
-                        i.icon.thumbs.up
-                        .detail #{votes}
-                .content
-                    .ui.horizontal.list
-                        each tags
-                            .item
-                                .ui.basic.button.addDocFilter #{this}
-                    .ui.basic.button.addAuthorFilter
-                        i.icon.user
-                        |#{authorname}
+    .ui.segment
+        +filter
+    +reactiveBlockGrid cursor=docs template='doc' transitionDuration='.5s' layoutMode='fitRows' gutter=20 columnWidth='.gutter-width' cssClass='blocks'
     if currentUser
         .ui.segment
             +quickForm collection='Docs' id='add' type='insert' fields='tags'
+
+template(name='doc')
+    .ui.card
+        .content
+            .header
+                .ui.buttons
+                    each tags
+                        .ui.basic.button.addDocFilter #{this}
+            .ui.icon.basic.button
+                i.icon.dropdown
+            if isOwner
+                .ui.button.basic.icon.removeDoc
+                    i.icon.remove
+            .ui.icon.large.label.basic.button.vote(class=voteclass)
+                i.icon.thumbs.up
+                .detail #{votes}
+        .content
+            .ui.basic.button.addAuthorFilter
+                i.icon.user
+                |#{authorname}
 template(name='tag')
     .ui.addCloudTagFilter.button.basic
-        |#{_id}
+        |#{name}
         .detail #{count}

@@ -83,7 +83,7 @@ if Meteor.isClient
         dropdownClasses: 'simple'
     AutoForm.debug()
 
-    Meteor.subscribe 'docs'
+    Tracker.autorun -> Meteor.subscribe 'docs', tagFilter.array()
     Tracker.autorun -> Meteor.subscribe 'tagpub', tagFilter.array(), authorFilter.array()
     Meteor.startup -> AutoForm.setDefaultTemplate 'semanticUI'
 
@@ -92,15 +92,14 @@ if Meteor.isClient
         tagFilterList: -> tagFilter.list()
         authorFilter: -> authorFilter.list()
     Template.filter.events
-        'click .addCloudTagFilter':  -> tagFilter.push @_id
+        'click .addCloudTagFilter':  ->
+            tagFilter.push @name.toString()
         'click .removeTagFilter': -> tagFilter.remove @toString()
         'click .removeAuthorFilter': -> authorFilter.remove @toString()
 
 
     Template.docs.helpers
-        docs: ->
-            if tagFilter.array().length is 0 then Docs.find()
-            else Docs.find tags: $all: tagFilter.array()
+        docs: -> Docs.find()
         isOwner: -> Meteor.userId() is @authorid
         isVotable: -> @authorid is not Meteor.userId()
     Template.docs.events
@@ -112,7 +111,8 @@ if Meteor.isClient
         'click .addDocFilter':  -> tagFilter.push @toString()
 
 if Meteor.isServer
-    Meteor.publish 'docs', -> Docs.find()
+    Meteor.publish 'docs', (tagFilterArray) ->
+        Docs.find tags: $all: tagFilterArray
     Meteor.publish 'tagpub', (tagFilterArray, authorFilterArray) ->
         self = @
         if tagFilterArray.length is 0 and authorFilterArray.length is 0
@@ -132,7 +132,9 @@ if Meteor.isServer
                 { $project: _id: 1, count: 1 }
             ]
 
-        tags.forEach (tag) -> self.added 'tags', tag._id, count:tag.count
+        tags.forEach (tag) -> self.added 'tags', Random.id(),
+            name: tag._id
+            count:tag.count
         self.ready()
 
     Docs.allow

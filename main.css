@@ -1,5 +1,7 @@
 .blocks{
-    padding: 0;
-    margin: 0;
     list-style: none;
+}
+.cards li{
+    padding: 10px;
+    margin: 10px;
 }
