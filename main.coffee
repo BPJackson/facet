@@ -17,9 +17,9 @@ Docs.attachSchema new SimpleSchema
                             value: input
                             text: input
                         }
-    authorid:
+    authorId:
         type: String
-    authorname:
+    authorName:
         type: String
     votes:
         type: Number
@@ -30,9 +30,7 @@ Docs.attachSchema new SimpleSchema
     submitted:
         type: Date
         defaultValue: new Date()
-    markdown:
-        type: String
-        defaultValue: ' '
+Docs.after.insert (userId, doc) -> Meteor.call 'aggUser', userId
 
 Router.configure
     layoutTemplate: 'layout'
@@ -51,22 +49,21 @@ Router.route 'editor',
         @next()
 
 Meteor.methods
-    removeDoc: (docid) -> Docs.remove docid
-    vote: (docid) ->
+    removeDoc: (docId) -> Docs.remove docId
+    vote: (docId) ->
         user = Meteor.user()
         Docs.update {
-            _id: docid
+            _id: docId
             voters: $ne: user._id
         },
             $addToSet: voters: user._id
             $inc: votes: 1
 
-        origin = Docs.findOne docid
+        origin = Docs.findOne docId
         Docs.insert
-            authorid: user._id
-            authorname: user.profile.name
+            authorId: user._id
+            authorName: user.profile.name
             tags: origin.tags
-
 
 if Meteor.isClient
     tagFilter = new ReactiveArray []
@@ -75,68 +72,85 @@ if Meteor.isClient
         before:
             insert: (doc) ->
                 user = Meteor.user()
-                doc.authorid = user._id
-                doc.authorname = user.profile.name
+                doc.authorId = user._id
+                doc.authorName = user.profile.name
                 doc
     Accounts.ui.config
         passwordSignupFields: 'USERNAME_ONLY'
-        dropdownClasses: 'simple'
+        #dropdownClasses: 'simple'
+        #dropdownTransition: 'drop'
     AutoForm.debug()
 
     Tracker.autorun -> Meteor.subscribe 'docs', tagFilter.array()
-    Tracker.autorun -> Meteor.subscribe 'tagpub', tagFilter.array(), authorFilter.array()
+    Tracker.autorun -> Meteor.subscribe 'tags', tagFilter.array(), authorFilter.array()
     Meteor.startup -> AutoForm.setDefaultTemplate 'semanticUI'
 
     Template.filter.helpers
         tags: -> Tags.find {}, sort: count: -1
         tagFilterList: -> tagFilter.list()
-        authorFilter: -> authorFilter.list()
+        authorFilterList: -> authorFilter.list()
     Template.filter.events
         'click .addCloudTagFilter':  ->
             tagFilter.push @name.toString()
         'click .removeTagFilter': -> tagFilter.remove @toString()
         'click .removeAuthorFilter': -> authorFilter.remove @toString()
 
+
     Template.docs.helpers
         docs: -> Docs.find()
-        isOwner: -> Meteor.userId() is @authorid
-        isVotable: -> @authorid is not Meteor.userId()
+        isOwner: ->  @authorId is Meteor.userId()
+        isVotable: -> @authorId is not Meteor.userId()
     Template.docs.events
         'click .removeDoc': -> Meteor.call 'removeDoc', @_id
         'click .vote':  -> Meteor.call 'vote', @_id
         'click .addAuthorFilter':  ->
-            console.log @authorname
-            authorFilter.push @authorname
+            console.log @authorName
+            authorFilter.push @authorName
         'click .addDocFilter':  -> tagFilter.push @toString()
 
 if Meteor.isServer
     Meteor.publish 'docs', (tagFilterArray) ->
-        Docs.find tags: $all: tagFilterArray
-    Meteor.publish 'tagpub', (tagFilterArray, authorFilterArray) ->
-        self = @
-        if tagFilterArray.length is 0 and authorFilterArray.length is 0
-            tags = Docs.aggregate [
-                { $project: tags: 1 }
-                { $unwind: '$tags' }
-                { $group: _id: '$tags', count: $sum: 1 }
-                { $project: _id: 1, count: 1 }
-            ]
-        else
-            tags = Docs.aggregate [
-                { $match: tags: $all: tagFilterArray }
-                { $project: tags: 1 }
-                { $unwind: '$tags' }
-                { $group: _id: '$tags', count: $sum: 1 }
-                { $match: _id: $nin: tagFilterArray }
-                { $project: _id: 1, count: 1 }
-            ]
+        if tagFilterArray.length is 0 then Docs.find()
+        else Docs.find tags: $all: tagFilterArray
 
-        tags.forEach (tag) -> self.added 'tags', Random.id(),
-            name: tag._id
+    Meteor.publish 'tags', (tagFilterArray, authorFilterArray) ->
+        self = @
+        match = {}
+
+        if tagFilterArray.length > 0 then match.tags= $all: tagFilterArray
+        if authorFilterArray.length > 0 then match.authorId= $in: authorFilterArray
+        console.log match
+        cloud = Docs.aggregate [
+            { $match: match}
+            { $project: tags: 1 }
+            { $unwind: '$tags' }
+            { $group: _id: '$tags', count: $sum: 1 }
+            { $match: _id: $nin: tagFilterArray }
+            { $project: _id: 0, name: '$_id', count: 1 }
+        ]
+        cloud.forEach (tag) -> self.added 'tags', Random.id(),
+            name: tag.name
             count:tag.count
+
+
+
         self.ready()
 
+    Meteor.methods
+        aggUser: (userId) ->
+            userCloud = Docs.aggregate [
+                { $match: authorId: userId }
+                { $project: tags: 1 }
+                { $unwind: '$tags' }
+                { $group: _id: '$tags', count: $sum: 1 }
+                { $project: _id: 0, name: '$_id', count: 1 }
+                ]
+            Meteor.users.update {_id:userId}, {$set: {cloud: userCloud} }
+
+            #userCloud.forEach (tag) ->
+                #console.log tag
+                #Meteor.users.update {_id: userId}, { $addToSet: cloud: tag }
 
     Docs.allow
         insert: (userId, doc) -> userId
-        remove: (userId, doc) -> userId is @authorid
+        remove: (userId, doc) -> userId is @authorId
