@@ -2,58 +2,56 @@ head
     title Gold Run
     meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
     meta(name='mobile-web-app-capable', content='yes')
-    meta(name='apple-mobile-web-app-capable', content='yes')
-    meta(name='apple-mobile-web-app-status-bar-style', content='black')
     meta(name='format-detection', content='telephone=no')
-    meta(name='apple-mobile-web-app-title', content='facet')
 
 template(name='layout')
-    .ui.two.item.menu
-        a.header.item(href='/') Facet
-        // a.item(href='/new') New
-        .item
-            +loginButtons align="right"
-    +yield
-
-template(name='filter')
-    .ui.horizontal.listS
-        each authorFilterList
-            .ui.labeled.icon.button.removeAuthorFilter
-                i.icon.user
-                | #{this}
-                i.icon.remove
-        each tagFilterList
-            .ui.labeled.icon.basic.button.removeTagFilter
-                | #{this}
-                i.icon.remove
-    +reactiveBlockGrid cursor=tags template='tag' transitionDuration='.5s' layoutMode='fitRows' gutter=20 columnWidth='.gutter-width' cssClass='blocks'
+    .ui.menu
+    .ui.container
+        +loginButtons
+        +yield
 
 template(name='docs')
     .ui.segment
-        +filter
-    +reactiveBlockGrid cursor=docs template='doc' transitionDuration='.5s' layoutMode='fitRows' gutter=20 columnWidth='.gutter-width' cssClass='blocks'
-    if currentUser
-        .ui.segment
-            +quickForm collection='Docs' id='add' type='insert' fields='tags'
-
-template(name='doc')
-    .ui.card
-        .content
-            .ui.horizontal.list
-                each tags
-                    .item
-                        | #{this}
-            if isOwner
-                .ui.button.basic.icon.removeDoc
+        .ui.horizontal.list
+            each authorFilterList
+                .ui.basic.button.removeAuthorFilter
+                    h3 by #{this}
                     i.icon.remove
-            // .ui.icon.large.label.basic.button.vote(class=voteclass)
-            //     i.icon.thumbs.up
-            //     .detail #{votes}
-        .content
-            .ui.basic.button.addAuthorFilter
-                i.icon.user
-                |#{authorName}
-template(name='tag')
-    .ui.addCloudTagFilter.button.basic
-        h3 #{name}
-        .detail #{count}
+            each tagFilterList
+                .ui.basic.button.removeTagFilter
+                    h3 #{this}
+                    i.icon.remove
+
+    .ui.segment
+        each globaltags
+            .ui.addCloudTagFilter.button.basic
+                h3 #{name}
+                .detail #{count}
+    .ui.segment
+        .ui.cards
+            each docs
+                .ui.card
+                    .content
+                        .ui.horizontal.list
+                            each tags
+                                .item
+                                    | #{this}
+                        // .ui.icon.large.label.basic.button.vote(class=voteclass)
+                        //     i.icon.thumbs.up
+                        //     .detail #{votes}
+                    .content
+                        .ui.basic.button.addAuthorFilter
+                            i.icon.user
+                            |#{authorName}
+                        if isOwner
+                            .ui.button.inverted.icon.removeDoc
+                                i.icon.remove
+                            .ui.button.inverted.icon.editDoc
+                                i.icon.edit
+                        // .ui.horizontal.list
+                        //     each personCloud
+                        //         .item
+                        //             | #{name}
+                        //             .detail #{count}
+    .ui.segment
+        +quickForm collection='Docs' id='add' type='insert' fields='tags'
