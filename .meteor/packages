@@ -7,15 +7,7 @@
 meteor-platform
 coffeescript
 mquandalle:jade
-semantic:ui@2.0.5
-flemay:less-autoprefixer
-iron:router
-aldeed:collection2@2.3.3
 meteorhacks:aggregate
 manuel:reactivearray
-raix:handlebar-helpers
-yogiben:helpers
-matb33:collection-hooks
 babrahams:constellation
-accounts-meteor-developer
-iandouglas:accounts-ui-semantic-ui
+d4nyll:epic
