@@ -1,0 +1,23 @@
+body
+    +home
+
+template(name='home')
+    form#add
+        label(for="tags") Tags
+        input(type="text", name="tags")
+        +epic
+        button(type="submit") Create
+    each authorFilterList
+        button.removeAuthorFilter
+            h3 by #{this}
+    each tagFilterList
+        button.removeTagFilter #{this}
+    each globaltags
+        button.addCloudTagFilter
+            h3 #{name}, #{count}
+    each docs
+        each tags
+                | #{this}
+        button.addAuthorFilter #{authorName}
+        button.removeDoc remove
+        button.editDoc edit
