@@ -1,23 +1,33 @@
+head
+    meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+    meta(name='mobile-web-app-capable', content='yes')
+    meta(name='apple-mobile-web-app-capable', content='yes')
+    meta(name='apple-mobile-web-app-status-bar-style', content='black')
+    meta(name='format-detection', content='telephone=no')
+
 body
+    +loginButtons
     +home
 
 template(name='home')
-    form#add
-        label(for="tags") Tags
-        input(type="text", name="tags")
-        +epic
-        button(type="submit") Create
-    each authorFilterList
-        button.removeAuthorFilter
-            h3 by #{this}
-    each tagFilterList
-        button.removeTagFilter #{this}
-    each globaltags
-        button.addCloudTagFilter
-            h3 #{name}, #{count}
-    each docs
+    .tags
+        each filterlist
+            button.unfilterTag
+                h4 #{this} X
+        each gtags
+            button.filterTag
+                h4 #{name} #{count}
+    .docs
+        button.add add
+        each docs
+            +doc
+template(name='doc')
+    if currentUser
+        +editableList collection="docs" field="tags"
+        +CodeMirror id="code" name="codename" options=editorOptions code=editorCode
+        .buttons
+            button.update update
+            button.delete delete
+    else
         each tags
-                | #{this}
-        button.addAuthorFilter #{authorName}
-        button.removeDoc remove
-        button.editDoc edit
+            p= this

@@ -1,59 +1,58 @@
 @Tags = new Meteor.Collection 'tags'
 @Docs = new Meteor.Collection 'docs'
 
-Meteor.methods
-    removeDoc: (docId) -> Docs.remove docId
-
 if Meteor.isClient
-    tagFilter = new ReactiveArray []
-
-    Tracker.autorun -> Meteor.subscribe 'docs', tagFilter.array()
-    Tracker.autorun -> Meteor.subscribe 'tags', tagFilter.array()
-
+    filter = new ReactiveArray []
+    Tracker.autorun -> Meteor.subscribe 'docs', filter.array()
+    Tracker.autorun -> Meteor.subscribe 'tags', filter.array()
 
     Template.home.helpers
         docs: -> Docs.find()
-        globaltags: -> Tags.find {}, sort: count: -1
-        tagFilterList: -> tagFilter.list()
+        gtags: -> Tags.find {}, sort: count: -1
+        filterlist: -> filter.list()
+        newDoc: -> {}
+
     Template.home.events
-        'click .addTagFilter': -> if tagFilter.indexOf(@name) is -1 then tagFilter.push @name.toString()
-        'click .removeTagFilter': -> tagFilter.remove @toString()
-        'click .removeDoc': -> Meteor.call 'removeDoc', @_id
-        'submit form': (e,t) ->
-            text = $('.epicarea').val()
-            tags = $("[name='tags']").val()
-            split = tags.split(', ')
-
-            doc = {
-                tags: split
-                text: text
+        'click .filterTag': -> filter.push @name.toString()
+        'click .unfilterTag': -> filter.remove @toString()
+        'click .add': ->
+            Docs.insert {}
+    Template.doc.helpers
+        'editorOptions': ->
+            {
+                lineNumbers: true
+                mode: 'javascript'
             }
-            console.log doc
+        'editorCode': ->
+            @text
 
-            #Docs.insert doc
-            false
+    Template.doc.events
+        'click .delete': -> Docs.remove @_id
+        'click .update': (e,t) ->
+            code = t.find('#code').value
+            Docs.update @_id, $set: text: code
 
 if Meteor.isServer
-    Meteor.publish 'docs', (tagFilterArray) ->
+    Docs.allow
+        insert: -> true
+        update: -> true
+        remove: -> true
+    Meteor.publish 'docs', (filter) ->
         match = {}
-        if tagFilterArray.length > 0 then match.tags= $all: tagFilterArray
-        Docs.find match
+        if filter.length > 0 then match.tags= $all: filter
+        Docs.find match, limit: 1
 
-    Meteor.publish 'tags', (tagFilterArray) ->
+    Meteor.publish 'tags', (filter) ->
         self = @
         match = {}
-        if tagFilterArray.length > 0 then match.tags= $all: tagFilterArray
+        if filter.length > 0 then match.tags= $all: filter
         cloud = Docs.aggregate [
             { $match: match }
             { $project: tags: 1 }
             { $unwind: '$tags' }
             { $group: _id: '$tags', count: $sum: 1 }
-            { $match: _id: $nin: tagFilterArray }
+            { $match: _id: $nin: filter }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
         cloud.forEach (tag) -> self.added 'tags', Random.id(), { name: tag.name, count:tag.count }
         self.ready()
-
-    Docs.allow
-        insert: (userId, doc) -> true
-        remove: (userId, doc) -> true
