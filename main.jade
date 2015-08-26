@@ -5,29 +5,54 @@ head
     meta(name='apple-mobile-web-app-status-bar-style', content='black')
     meta(name='format-detection', content='telephone=no')
 
+
 body
-    +loginButtons
-    +home
+    .ui.menu
+        .item.header Facet
+        .item
+            +loginButtons
+    .ui.container
+        +home
 
 template(name='home')
     .tags
         each filterlist
-            button.unfilterTag
+            button.ui.basic.button.unfilterTag
                 h4 #{this} X
         each gtags
-            button.filterTag
+            button.ui.basic.button.filterTag
                 h4 #{name} #{count}
     .docs
-        button.add add
+        button.ui.basic.green.button.add add
         each docs
-            +doc
+            .doc
+                +doc
 template(name='doc')
-    if currentUser
+    if isEditing
         +editableList collection="docs" field="tags"
         +CodeMirror id="code" name="codename" options=editorOptions code=editorCode
+        // textarea#body(rows='10')
+        button.edit edit
         .buttons
             button.update update
             button.delete delete
     else
         each tags
             p= this
+        #markdown
+            |#{text}
+template(name="editor")
+    header.editor-header
+        label(for="documentTitle") Title
+        input(type="text", name="documentTitle", value="{{document.title}}")
+        if saving
+            span.save-state
+                | Saving...
+        else
+            span.save-state.text-success
+                | Saved
+    .editor-preview
+        .editor-wrap
+            textarea#editor
+        .preview-wrap
+            #preview

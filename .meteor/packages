@@ -15,8 +15,8 @@ perak:markdown
 underscore
 raix:handlebar-helpers
 babrahams:editable-list
-accounts-password
-accounts-ui
-d4nyll:epic
 babrahams:editable-text
-perak:codemirror
+accounts-password
+semantic:ui
+flemay:less-autoprefixer
+accounts-ui

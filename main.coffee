@@ -6,32 +6,28 @@ if Meteor.isClient
     Tracker.autorun -> Meteor.subscribe 'docs', filter.array()
     Tracker.autorun -> Meteor.subscribe 'tags', filter.array()
 
+    Accounts.ui.config
+        passwordSignupFields: 'USERNAME_ONLY'
+
+
     Template.home.helpers
         docs: -> Docs.find()
         gtags: -> Tags.find {}, sort: count: -1
         filterlist: -> filter.list()
-        newDoc: -> {}
 
     Template.home.events
         'click .filterTag': -> filter.push @name.toString()
         'click .unfilterTag': -> filter.remove @toString()
-        'click .add': ->
-            Docs.insert {}
+        'click .add': -> Docs.insert {}
     Template.doc.helpers
-        'editorOptions': ->
-            {
-                lineNumbers: true
-                mode: 'javascript'
-            }
-        'editorCode': ->
-            @text
 
     Template.doc.events
         'click .delete': -> Docs.remove @_id
         'click .update': (e,t) ->
             code = t.find('#code').value
             Docs.update @_id, $set: text: code
-
+        'click .edit': ->
+            Session.set
 if Meteor.isServer
     Docs.allow
         insert: -> true
@@ -40,7 +36,8 @@ if Meteor.isServer
     Meteor.publish 'docs', (filter) ->
         match = {}
         if filter.length > 0 then match.tags= $all: filter
-        Docs.find match, limit: 1
+        #Docs.find match, limit: 1
+        Docs.find match
 
     Meteor.publish 'tags', (filter) ->
         self = @
