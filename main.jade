@@ -7,52 +7,52 @@ head
 
 
 body
+    +menu
+    .ui.container
+        +home
+
+template(name='menu')
     .ui.menu
         .item.header Facet
         .item
             +loginButtons
-    .ui.container
-        +home
+        a.item
+            .add add
 
 template(name='home')
     .tags
         each filterlist
-            button.ui.basic.button.unfilterTag
+            .ui.basic.button.unfilterTag
                 h4 #{this} X
         each gtags
-            button.ui.basic.button.filterTag
+            .ui.basic.button.filterTag
                 h4 #{name} #{count}
     .docs
-        button.ui.basic.green.button.add add
-        each docs
-            .doc
-                +doc
+        .ui.cards
+            each docs
+                .card
+                    +doc
+
 template(name='doc')
-    if isEditing
-        +editableList collection="docs" field="tags"
-        +CodeMirror id="code" name="codename" options=editorOptions code=editorCode
-        // textarea#body(rows='10')
-        button.edit edit
-        .buttons
-            button.update update
-            button.delete delete
+    if editing
+        +edit
     else
-        each tags
-            p= this
-        #markdown
-            |#{text}
-template(name="editor")
-    header.editor-header
-        label(for="documentTitle") Title
-        input(type="text", name="documentTitle", value="{{document.title}}")
-        if saving
-            span.save-state
-                | Saving...
-        else
-            span.save-state.text-success
-                | Saved
-    .editor-preview
-        .editor-wrap
-            textarea#editor
-        .preview-wrap
-            #preview
+        .content
+            .ui.large.horizontal.list
+                each tags
+                    .item= this
+        .content
+            #markdown
+                |#{text}
+    .extra.content
+        .ui.buttons
+            if editing
+                .ui.toggle.button.active.stopEditing editing
+                .ui.button.delete delete
+            else
+                .ui.toggle.button.edit edit
+template(name='edit')
+    .content
+        select#tagselector.ui.multiple.search(multiple='true')
+            each tags
+                option(value=this selected='selected')= this
