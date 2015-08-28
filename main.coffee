@@ -10,34 +10,39 @@ if Meteor.isClient
     Accounts.ui.config
         passwordSignupFields: 'USERNAME_ONLY'
 
+    Template.menu.events
+        'click .add': -> Docs.insert {}
 
     Template.home.helpers
         docs: -> Docs.find()
-        gtags: -> Tags.find {}, sort: count: -1
+        globalTags: -> Tags.find {}, sort: count: -1
         filterlist: -> filter.list()
     Template.home.events
         'click .filterTag': -> filter.push @name.toString()
         'click .unfilterTag': -> filter.remove @toString()
+        #'click .toggle': (e,t) -> t.$('.card').transition('scale')
 
+    Template.home.onRendered ->
+        #@$('.card').transition('scale')
 
     Template.doc.helpers
-        editing:  -> Session.equals 'editing', @_id
+        editing: -> Session.equals 'editing', @_id
 
     Template.doc.events
-        'click .edit': -> Session.set 'editing', @_id
-        'click .stopEditing': -> Session.set 'editing', null
-
-    Template.edit.helpers
-        doctags:-> @tags
-    Template.edit.events
+        'click .edit': _.throttle(((e,t) ->
+            #t.$('.editclass').transition('flip horizontal')
+            Session.set('editing', @_id)
+            ), 500)
+        'click .save': -> Session.set 'editing', null
         'click .delete': -> Docs.remove @_id
 
-        'click .load': (e,t) ->
-            #val2 = t.$('#tagselector').dropdown('set value', 'gopher')
-            t.$('#tagselector').dropdown('set exactly', @tags)
-        'click .save': (e,t) ->
-            val = t.$('#tagselector').dropdown('get text')
-            console.log val
+    Template.edit.events
+        'keyup #docbodyarea': (e,t) ->
+            console.log e.target.value
+            val = e.target.value
+            Docs.update @_id, $set: body: val
+    Template.edit.helpers
+        docbody:-> @body
     Template.edit.onRendered ->
         self = @
         @$('#tagselector').dropdown
@@ -45,8 +50,6 @@ if Meteor.isClient
             placeholder: 'add tags'
             onAdd: (addedValue) -> Docs.update self.data._id, $addToSet: tags: addedValue
             onRemove: (removedValue) -> Docs.update self.data._id, $pull: tags: removedValue
-    Template.menu.events
-        'click .add': -> Docs.insert {}
 
 
 if Meteor.isServer

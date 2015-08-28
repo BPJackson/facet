@@ -8,7 +8,7 @@ head
 
 body
     +menu
-    .ui.container
+    .ui.container.grid
         +home
 
 template(name='menu')
@@ -20,39 +20,42 @@ template(name='menu')
             .add add
 
 template(name='home')
-    .tags
-        each filterlist
-            .ui.basic.button.unfilterTag
-                h4 #{this} X
-        each gtags
-            .ui.basic.button.filterTag
-                h4 #{name} #{count}
-    .docs
-        .ui.cards
+    .ui.segment
+        .tags
+            each filterlist
+                .ui.basic.button.unfilterTag
+                    h4 #{this} X
+            each globalTags
+                .ui.basic.button.filterTag
+                    h4 #{name} #{count}
+    .ui.segment
+        .ui.divided.items.ten.wide
             each docs
-                .card
+                .item
                     +doc
 
 template(name='doc')
-    if editing
-        +edit
-    else
-        .content
-            .ui.large.horizontal.list
-                each tags
-                    .item= this
-        .content
-            #markdown
-                |#{text}
-    .extra.content
-        .ui.buttons
-            if editing
-                .ui.toggle.button.active.stopEditing editing
-                .ui.button.delete delete
-            else
-                .ui.toggle.button.edit edit
-template(name='edit')
     .content
-        select#tagselector.ui.multiple.search(multiple='true')
-            each tags
-                option(value=this selected='selected')= this
+        if editing
+            +edit
+            .ui.toggle.button.active.save save
+            .ui.button.delete delete
+        else
+            .content
+                .header
+                    .ui.large.horizontal.list
+                        each tags
+                            .item= this
+                .meta
+                    +markdown
+                        #{body}
+            .ui.toggle.button.edit edit
+
+template(name='edit')
+    .ui.form
+        .field
+            select#tagselector.ui.multiple.search(multiple='true')
+                each tags
+                    option(value=this selected='selected')= this
+        .field
+            textarea#docbodyarea= docbody
