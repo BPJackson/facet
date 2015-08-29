@@ -10,9 +10,8 @@ mquandalle:jade@0.4.3_1
 meteorhacks:aggregate@1.3.0
 manuel:reactivearray
 babrahams:constellation
-underscore
-accounts-password
 semantic:ui
 flemay:less-autoprefixer
-accounts-ui
 chuangbo:marked
+accounts-password
+iandouglas:accounts-ui-semantic-ui

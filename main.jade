@@ -18,11 +18,15 @@ template(name='home')
             .ui.compact.secondary.button.filterTag
                 |#{name}
                 small #{count}
-    .ui.inverted.segments
+    .ui.segments.nope
         each items
             .ui.segment
                 +item
-
+    .ui.bottom.fixed.inverted.menu
+        .item
+            +loginButtons
+        if currentUser
+            a.item.add add
 template(name='item')
     if isEditing
         .content
@@ -33,16 +37,27 @@ template(name='item')
         .content
             .ui.large.grey.labels
                 each tags
-                    .ui.label #{this}
+                    .ui.label.doctag #{this}
         +markdown
             #{body}
         .extra
-            .ui.basic.button.edit edit
-            i.fork.icon
-            |clone
-            i.thumbs.outline.up.icon
+            if isOwner
+                .ui.basic.icon.button.edit
+                    i.edit.icon
+                    |edit
+            if canClone
+                .ui.basic.icon.button.clone
+                    i.fork.icon
+                    |clone
+            if canUpvote
+                .ui.basic.icon.button.clone
+                    i.thumbs.outline.up.icon
+                    |upvote
+            if canDownvote
+                .ui.basic.icon.button.clone
+                    i.thumbs.outline.down.icon
+                    |downvote this mathafucka
             |29 votes
-            i.thumbs.outline.down.icon
             |43 votes
 
 template(name='editing')

@@ -7,3 +7,11 @@
 .blocked {
     display: inline !important
 }
+
+/*body {*/
+/*    background-color: darkgrey;*/
+/*}*/
+
+.nope {
+    margin-top: 0 !important
+}
