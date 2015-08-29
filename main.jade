@@ -5,57 +5,49 @@ head
     meta(name='apple-mobile-web-app-status-bar-style', content='black')
     meta(name='format-detection', content='telephone=no')
 
-
 body
-    +menu
-    .ui.container.grid
-        +home
-
-template(name='menu')
-    .ui.menu
-        .item.header Facet
-        .item
-            +loginButtons
-        a.item
-            .add add
+    +home
 
 template(name='home')
-    .ui.segment
-        .tags
-            each filterlist
-                .ui.basic.button.unfilterTag
-                    h4 #{this} X
-            each globalTags
-                .ui.basic.button.filterTag
-                    h4 #{name} #{count}
-    .ui.segment
-        .ui.divided.items.ten.wide
-            each docs
-                .item
-                    +doc
+    .ui.vertical.inverted.segment
+        each filterlist
+            .ui.inverted.compact.button.unfilterTag
+                strong #{this}
+                i.icon.remove
+        each globalTags
+            .ui.compact.secondary.button.filterTag
+                |#{name}
+                small #{count}
+    .ui.inverted.segments
+        each items
+            .ui.segment
+                +item
 
-template(name='doc')
-    .content
-        if editing
-            +edit
-            .ui.toggle.button.active.save save
-            .ui.button.delete delete
-        else
-            .content
-                .header
-                    .ui.large.horizontal.list
-                        each tags
-                            .item= this
-                .meta
-                    +markdown
-                        #{body}
-            .ui.toggle.button.edit edit
-
-template(name='edit')
-    .ui.form
-        .field
-            select#tagselector.ui.multiple.search(multiple='true')
+template(name='item')
+    if isEditing
+        .content
+            +editing
+            .extra
+                .ui.basic.active.button.editing editing
+    else
+        .content
+            .ui.large.grey.labels
                 each tags
-                    option(value=this selected='selected')= this
-        .field
-            textarea#docbodyarea= docbody
+                    .ui.label #{this}
+        +markdown
+            #{body}
+        .extra
+            .ui.basic.button.edit edit
+            i.fork.icon
+            |clone
+            i.thumbs.outline.up.icon
+            |29 votes
+            i.thumbs.outline.down.icon
+            |43 votes
+
+template(name='editing')
+    .ui.form
+        .field: select#tagselector.bs.ui.multiple.search(multiple='true')
+            each tags
+                option(value=this selected='selected')= this
+        .field: textarea#itembodyarea.bs= body
