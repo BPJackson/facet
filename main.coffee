@@ -82,7 +82,6 @@ if Meteor.isClient
         'click .downvote': -> Meteor.call 'downvote', @_id
         'click .delete': ->
             $('.viewarea').dimmer('hide')
-            console.log @
             Items.remove @_id
     Template.editing.events
         'keyup input, keyup textarea':(e,t)->
