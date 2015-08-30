@@ -1,14 +1,33 @@
 @Tags = new Meteor.Collection 'tags'
 @Items = new Meteor.Collection 'items'
 
+Meteor.methods
+      downvote: (itemId)->
+          Items.update itemId,
+              $addToSet: downvoters: Meteor.userId()
+              $inc: downvotes: 1, points: -1
+      upvote: (itemId)->
+          Items.update itemId,
+              $addToSet: upvoters: Meteor.userId()
+              $inc: points: 1, upvotes: 1
+
+
+
+Items.before.insert (userId, doc) ->
+    doc.timestamp = Date.now()
+    doc.owner = Meteor.userId()
+    doc.upvotes = 0
+    doc.upvoters = []
+    doc.downvotes = 0
+    doc.downvoters = []
+    doc.points = 0
+
 if Meteor.isClient
     Session.setDefault 'editing', null
     filter = new ReactiveArray []
 
     Accounts.ui.config
         passwordSignupFields: 'USERNAME_ONLY'
-        dropdownClasses: 'scale'
-        #dropdownTransition: 'drop'
     Tracker.autorun -> Meteor.subscribe 'items', filter.array()
     Tracker.autorun -> Meteor.subscribe 'tags', filter.array()
     Meteor.subscribe 'users'
@@ -18,10 +37,7 @@ if Meteor.isClient
 
     Template.home.events
         'click .add': ->
-            newId = Items.insert {
-                owner: uid
-                timestamp: new Date()
-                }
+            newId = Items.insert {}
             Session.set 'editing', newId
         'click .filterTag': -> filter.push @name.toString()
         'click .unfilterTag': -> filter.remove @toString()
@@ -46,24 +62,36 @@ if Meteor.isClient
             if owner then owner.username
 
     Template.item.events
-        'click .doctag': (e)-> filter.push e.target.textContent
-        'click .edit': -> Session.set 'editing', @_id
-        'click .editing': -> Session.set 'editing', null
-        'click .clone': (e)->
-            cloneId = Items.insert {
-             owner: uid
-             timestamp: new Date()
-             tags: @tags
-             body: @body
-            }
-            Session.set 'editing', cloneId
-
-
-    Template.editing.events
-        'keyup #itembodyarea': _.throttle(((e,t) ->
-            val = e.target.value
+        'click .itemtag': (e)-> filter.push e.target.textContent
+        'click .edit': (e,t)->
+            $('.viewarea').dimmer('show')
+            Session.set 'editing', @_id
+        'click .save': (e,t)->
+            val = t.find('textarea').value
             Items.update @_id, $set: body: val
-            ), 1000)
+            $('.viewarea').dimmer('hide')
+            Session.set 'editing', null
+        'click .clone': (e)->
+            $('.viewarea').dimmer('show')
+            cloneId = Items.insert {
+                tags: @tags
+                body: @body
+                }
+            Session.set 'editing', cloneId
+        'click .upvote': -> Meteor.call 'upvote', @_id
+        'click .downvote': -> Meteor.call 'downvote', @_id
+        'click .delete': ->
+            $('.viewarea').dimmer('hide')
+            console.log @
+            Items.remove @_id
+    Template.editing.events
+        'keyup input, keyup textarea':(e,t)->
+            if (event.keyCode is 10 or event.keyCode is 13) and event.ctrlKey
+                val = t.find('textarea').value
+                Items.update @_id, $set: body: val
+                $('.viewarea').dimmer('hide')
+                Session.set 'editing', null
+
     Template.editing.onRendered ->
         self = @
         @$('#tagselector').dropdown
@@ -88,7 +116,7 @@ if Meteor.isServer
     Meteor.publish 'items', (filter)->
         match = {}
         if filter.length > 0 then match.tags= $all: filter
-        Items.find match
+        Items.find match, limit: 10
 
     Meteor.publish 'tags', (filter)->
         me = @

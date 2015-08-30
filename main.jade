@@ -21,7 +21,7 @@ template(name='home')
         each items
             .ui.segment
                 +item
-    .ui.bottom.fixed.inverted.menu
+    .ui.bottom.inverted.menu
         .item
             +loginButtons
         if currentUser
@@ -29,42 +29,51 @@ template(name='home')
 
 template(name='item')
     if isEditing
-        .content
+        .editarea
             +editing
-            .extra
-                .ui.basic.active.button.editing editing
     else
-        .content
-            .ui.large.grey.labels
-                each tags
-                    .ui.label.doctag #{this}
-        +markdown
-            #{body}
-        .extra
-            if isOwner
-                .ui.basic.icon.button.edit
-                    i.edit.icon
-                    |edit
-            if canClone
-                .ui.basic.icon.button.clone
-                    i.fork.icon
-                    |clone
-            if canUpvote
-                .ui.basic.icon.button.clone
-                    i.thumbs.outline.up.icon
-                    |29 votes
-            if canDownvote
-                .ui.basic.icon.button.clone
-                    i.thumbs.outline.down.icon
-                    |43 votes
-            .ui.basic.icon.button.username
-                i.user.icon
-                |#{username}
-            |#{when}
+        .viewarea
+            .ui.inverted.dimmer
+            .content
+                .ui.large.grey.labels
+                    each tags
+                        .ui.label.itemtag #{this}
+            +markdown
+                #{body}
+            .extra
+                if isOwner
+                    .ui.basic.icon.button.edit
+                        // i.edit.icon
+                        |edit
+                if canClone
+                    .ui.basic.icon.button.clone
+                        // i.fork.icon
+                        |clone
+                .ui.label #{points} points
+                if canUpvote
+                    .ui.basic.icon.button.upvote
+                        i.thumbs.outline.up.icon
+                        |#{upvotes}
+                if canDownvote
+                    .ui.basic.icon.button.downvote
+                        i.thumbs.outline.down.icon
+                        |#{downvotes}
+                .ui.basic.icon.button.username
+                    i.user.icon
+                    |#{username}
+                |#{when}
 
 template(name='editing')
     .ui.form
         .field: select#tagselector.bs.ui.multiple.search(multiple='true')
             each tags
                 option(value=this selected='selected')= this
-        .field: textarea#itembodyarea.bs(placeholder='add markdown')= body
+        .field: textarea.bs(placeholder='add markdown')= body
+    .ui.hidden.fitted.divider
+    .extra
+        .ui.basic.active.button.save
+            |save
+            small (ctrl-enter)
+        .ui.basic.icon.button.delete
+            i.remove.icon
+            |delete

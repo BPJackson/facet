@@ -14,5 +14,6 @@ semantic:ui
 flemay:less-autoprefixer
 chuangbo:marked
 accounts-password
-iandouglas:accounts-ui-semantic-ui
 momentjs:moment
+matb33:collection-hooks
+accounts-ui

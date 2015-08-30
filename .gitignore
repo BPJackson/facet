@@ -2,4 +2,4 @@
 .DS_Store
 settings.json
 mup.json
-client/lib/sem/
+client/sem/
