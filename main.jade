@@ -41,26 +41,25 @@ template(name='item')
             +markdown
                 #{body}
             .extra
+                .ui.basic.icon.button.username
+                    i.user.icon
+                    |#{username}
                 if isOwner
                     .ui.basic.icon.button.edit
                         // i.edit.icon
                         |edit
                 if canClone
                     .ui.basic.icon.button.clone
-                        // i.fork.icon
+                        i.fork.icon
                         |clone
-                .ui.label #{points} points
-                if canUpvote
-                    .ui.basic.icon.button.upvote
-                        i.thumbs.outline.up.icon
-                        |#{upvotes}
-                if canDownvote
-                    .ui.basic.icon.button.downvote
-                        i.thumbs.outline.down.icon
-                        |#{downvotes}
-                .ui.basic.icon.button.username
-                    i.user.icon
-                    |#{username}
+                .ui.basic.buttons
+                    .ui.icon.button.upvote(class=upvoteButtonClass)
+                        i.icon(class=upvoteIconClass)
+                        | #{upvotes}
+                    .ui.icon.button.downvote(class=downvoteButtonClass)
+                        i.icon(class=downvoteIconClass)
+                        | #{downvotes}
+                | #{points} points
                 |#{when}
 
 template(name='editing')

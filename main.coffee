@@ -2,16 +2,51 @@
 @Items = new Meteor.Collection 'items'
 
 Meteor.methods
-      downvote: (itemId)->
-          Items.update itemId,
-              $addToSet: downvoters: Meteor.userId()
-              $inc: downvotes: 1, points: -1
-      upvote: (itemId)->
-          Items.update itemId,
-              $addToSet: upvoters: Meteor.userId()
-              $inc: points: 1, upvotes: 1
+    clickUpvote: (itemId)->
 
+        item = Items.findOne itemId
+        uid = Meteor.userId()
 
+        #toggle if downvoted
+        if item.downvoters.indexOf(uid) > -1
+            Items.update itemId,
+                $pull: downvoters: uid
+                $addToSet: upvoters: uid
+                $inc: downvotes: -1, points: 2, upvotes: 1
+
+        #undo if upvoted
+        else if item.upvoters.indexOf(uid) > -1
+            Items.update itemId,
+                $pull: upvoters: uid
+                $inc: upvotes: -1, points: -1
+
+        else
+            Items.update itemId,
+                $inc: points: 1, upvotes: 1
+                $addToSet: upvoters: uid
+
+    clickDownvote: (itemId)->
+
+        item = Items.findOne itemId
+        uid = Meteor.userId()
+
+        #toggle if upvoted
+        if item.upvoters.indexOf(uid) > -1
+            Items.update itemId,
+                $pull: upvoters: uid
+                $addToSet: downvoters: uid
+                $inc: upvotes: -1, points: -2, downvotes: 1
+
+        #undo if downvoted
+        else if item.downvoters.indexOf(uid) > -1
+            Items.update itemId,
+                $pull: downvoters: uid
+                $inc: downvotes: -1, points: 1
+
+        else
+            Items.update itemId,
+                $inc: points: -1, downvotes: 1
+                $addToSet: downvoters: uid
 
 Items.before.insert (userId, doc) ->
     doc.timestamp = Date.now()
@@ -32,9 +67,6 @@ if Meteor.isClient
     Tracker.autorun -> Meteor.subscribe 'tags', filter.array()
     Meteor.subscribe 'users'
 
-
-    uid = if Meteor.userId() then Meteor.userId()
-
     Template.home.events
         'click .add': ->
             newId = Items.insert {}
@@ -51,26 +83,39 @@ if Meteor.isClient
 
     Template.item.helpers
         isEditing: -> Session.equals 'editing', @_id
-        isOwner: -> @owner is uid
-        canDownvote: -> uid
-        canUpvote: -> uid
-        canEdit: -> uid is @owner
-        canClone: -> uid
+        isOwner: -> @owner is Meteor.userId()
+
+        canDownvote: -> Meteor.userId()
+        canUpvote: -> Meteor.userId()
+
+        canEdit: -> Meteor.userId()  is @owner
+        canClone: -> Meteor.userId()
+
         when: -> moment.utc(@timestamp).fromNow()
         username: ->
             owner = Meteor.users.findOne @owner
             if owner then owner.username
 
+        upvoteButtonClass: -> if not Meteor.userId() or @owner is Meteor.userId() then 'disabled' else ''
+        downvoteButtonClass: -> if not Meteor.userId() or @owner is Meteor.userId() then 'disabled' else ''
+
+        upvoteIconClass: -> if @upvoters.indexOf(Meteor.userId()) > -1 then 'thumbs up' else 'thumbs up outline'
+        downvoteIconClass: -> if @downvoters.indexOf(Meteor.userId()) > -1 then 'thumbs down' else 'thumbs down outline'
+
+
     Template.item.events
         'click .itemtag': (e)-> filter.push e.target.textContent
+
         'click .edit': (e,t)->
             $('.viewarea').dimmer('show')
             Session.set 'editing', @_id
+
         'click .save': (e,t)->
             val = t.find('textarea').value
             Items.update @_id, $set: body: val
             $('.viewarea').dimmer('hide')
             Session.set 'editing', null
+
         'click .clone': (e)->
             $('.viewarea').dimmer('show')
             cloneId = Items.insert {
@@ -78,11 +123,14 @@ if Meteor.isClient
                 body: @body
                 }
             Session.set 'editing', cloneId
-        'click .upvote': -> Meteor.call 'upvote', @_id
-        'click .downvote': -> Meteor.call 'downvote', @_id
+
+        'click .upvote': -> Meteor.call 'clickUpvote', @_id
+        'click .downvote': -> Meteor.call 'clickDownvote', @_id
+
         'click .delete': ->
             $('.viewarea').dimmer('hide')
             Items.remove @_id
+
     Template.editing.events
         'keyup input, keyup textarea':(e,t)->
             if (event.keyCode is 10 or event.keyCode is 13) and event.ctrlKey
