@@ -7,44 +7,56 @@ if Meteor.isClient
 
     Accounts.ui.config
         passwordSignupFields: 'USERNAME_ONLY'
-
+        dropdownClasses: 'scale'
+        #dropdownTransition: 'drop'
     Tracker.autorun -> Meteor.subscribe 'items', filter.array()
     Tracker.autorun -> Meteor.subscribe 'tags', filter.array()
+    Meteor.subscribe 'users'
 
 
+    uid = if Meteor.userId() then Meteor.userId()
 
     Template.home.events
         'click .add': ->
-            Items.insert {
-                owner: Meteor.userId()
+            newId = Items.insert {
+                owner: uid
                 timestamp: new Date()
                 }
+            Session.set 'editing', newId
         'click .filterTag': -> filter.push @name.toString()
         'click .unfilterTag': -> filter.remove @toString()
+
     Template.home.helpers
         globalTags: ->
             itemCount = Items.find().count()
             Tags.find {count: $lt: itemCount}, limit: 10
         filterlist: -> filter.list()
-        items: -> Items.find()
+        items: -> Items.find {}, sort: timestamp: -1
 
     Template.item.helpers
-
-
         isEditing: -> Session.equals 'editing', @_id
-        isOwner: -> @owner is Meteor.userId()
-
-        canDownvote: ->
-        canUpvote: ->
-        canEdit: -> Meteor.userId() is @owner
-        canClone: -> Meteor.userId() is @owner
+        isOwner: -> @owner is uid
+        canDownvote: -> uid
+        canUpvote: -> uid
+        canEdit: -> uid is @owner
+        canClone: -> uid
+        when: -> moment.utc(@timestamp).fromNow()
+        username: ->
+            owner = Meteor.users.findOne @owner
+            if owner then owner.username
 
     Template.item.events
         'click .doctag': (e)-> filter.push e.target.textContent
         'click .edit': -> Session.set 'editing', @_id
         'click .editing': -> Session.set 'editing', null
         'click .clone': (e)->
-
+            cloneId = Items.insert {
+             owner: uid
+             timestamp: new Date()
+             tags: @tags
+             body: @body
+            }
+            Session.set 'editing', cloneId
 
 
     Template.editing.events
@@ -70,6 +82,8 @@ if Meteor.isServer
         remove: (userId, doc)-> doc.owner is userId
         fetch: [ 'owner' ]
 
+    Meteor.publish 'users', ->
+        Meteor.users.find()
 
     Meteor.publish 'items', (filter)->
         match = {}

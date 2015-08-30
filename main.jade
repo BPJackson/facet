@@ -4,7 +4,6 @@ head
     meta(name='apple-mobile-web-app-capable', content='yes')
     meta(name='apple-mobile-web-app-status-bar-style', content='black')
     meta(name='format-detection', content='telephone=no')
-
 body
     +home
 
@@ -27,6 +26,7 @@ template(name='home')
             +loginButtons
         if currentUser
             a.item.add add
+
 template(name='item')
     if isEditing
         .content
@@ -52,17 +52,19 @@ template(name='item')
             if canUpvote
                 .ui.basic.icon.button.clone
                     i.thumbs.outline.up.icon
-                    |upvote
+                    |29 votes
             if canDownvote
                 .ui.basic.icon.button.clone
                     i.thumbs.outline.down.icon
-                    |downvote this mathafucka
-            |29 votes
-            |43 votes
+                    |43 votes
+            .ui.basic.icon.button.username
+                i.user.icon
+                |#{username}
+            |#{when}
 
 template(name='editing')
     .ui.form
         .field: select#tagselector.bs.ui.multiple.search(multiple='true')
             each tags
                 option(value=this selected='selected')= this
-        .field: textarea#itembodyarea.bs= body
+        .field: textarea#itembodyarea.bs(placeholder='add markdown')= body
