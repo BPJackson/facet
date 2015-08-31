@@ -8,8 +8,25 @@ body
     +home
 
 template(name='home')
+    .ui.compact.inverted.fluid.menu
+        .item
+            +loginButtons
+        if currentUser
+            .item #{user.points}
+            a.item.add
+                |add (alt shift n)
+            .item
+                |my cloud:
+                each user.cloud
+                    .ui.small.label.userCloudTag #{name} #{points}
+    .ui.fitted.divider
     .ui.vertical.inverted.segment
-        each filterlist
+        each authorFilterList
+            .ui.compact.button.unfilterAuthor
+                i.user.icon
+                strong #{this}
+                i.icon.remove
+        each tagFilterList
             .ui.inverted.compact.button.unfilterTag
                 strong #{this}
                 i.icon.remove
@@ -21,18 +38,9 @@ template(name='home')
         each items
             .ui.segment
                 +item
-    .ui.bottom.inverted.menu
-        .item
-            +loginButtons
-        if currentUser
-            a.item.add add
-
 template(name='item')
-    if isEditing
-        .editarea
-            +editing
-    else
-        .viewarea
+    if isAuction
+        .auction.viewarea
             .ui.inverted.dimmer
             .content
                 .ui.large.grey.labels
@@ -40,27 +48,50 @@ template(name='item')
                         .ui.label.itemtag #{this}
             +markdown
                 #{body}
-            .extra
-                .ui.basic.icon.button.username
-                    i.user.icon
-                    |#{username}
-                if isOwner
-                    .ui.basic.icon.button.edit
-                        // i.edit.icon
-                        |edit
-                if canClone
-                    .ui.basic.icon.button.clone
-                        i.fork.icon
-                        |clone
-                .ui.basic.buttons
-                    .ui.icon.button.upvote(class=upvoteButtonClass)
-                        i.icon(class=upvoteIconClass)
-                        | #{upvotes}
-                    .ui.icon.button.downvote(class=downvoteButtonClass)
-                        i.icon(class=downvoteIconClass)
-                        | #{downvotes}
-                | #{points} points
-                |#{when}
+            p ends #{whenEnd}
+            p high bid: #{highBid}
+            p high bidder: #{highBidder}
+            .ui.basic.button
+                |bid
+                | #{highBid} + 1
+    unless isAuction
+        if isEditing
+            .editarea
+                +editing
+        else
+            .viewarea
+                .ui.inverted.dimmer
+                .content
+                    .ui.large.grey.labels
+                        each tags
+                            .ui.label.itemtag #{this}
+                +markdown
+                    #{body}
+                .extra
+                    if isAuthor
+                        .ui.basic.small.button.edit
+                            i.edit.icon
+                            |edit
+                    if canClone
+                        .ui.basic.small.button.clone
+                            i.fork.icon
+                            |clone
+                    .ui.basic.small.buttons
+                        .ui.small.button.up(class=upButtonClass)
+                            i.icon(class=upIconClass)
+                            | #{ups}
+                        .ui.small.button.down(class=downButtonClass)
+                            i.icon(class=downIconClass)
+                            | #{downs}
+                    .ui.top.right.attached.label #{points}
+                    .ui.basic.small.button.username(class=authorButtonClass)
+                        i.user.icon
+                        | #{author.username}
+                        .ui.circular.label #{author.points}
+                        // i.cloud.icon`
+                        each author.cloud
+                            .ui.small.label #{name} #{count}
+                    // .ui.label created #{whenCreated}
 
 template(name='editing')
     .ui.form
@@ -72,7 +103,7 @@ template(name='editing')
     .extra
         .ui.basic.active.button.save
             |save
-            small (ctrl-enter)
+            small (ctrl enter)
         .ui.basic.icon.button.delete
             i.remove.icon
             |delete

@@ -1,110 +1,164 @@
 @Tags = new Meteor.Collection 'tags'
 @Items = new Meteor.Collection 'items'
 
+Items.helpers
+    author: -> Meteor.users.findOne @authorId
+
 Meteor.methods
-    clickUpvote: (itemId)->
+    clickup: (itemId)->
 
         item = Items.findOne itemId
         uid = Meteor.userId()
 
-        #toggle if downvoted
-        if item.downvoters.indexOf(uid) > -1
+        #toggle if downd
+        if item.downers.indexOf(uid) > -1
             Items.update itemId,
-                $pull: downvoters: uid
-                $addToSet: upvoters: uid
-                $inc: downvotes: -1, points: 2, upvotes: 1
+                $pull: downers: uid
+                $addToSet: uppers: uid
+                $inc: downs: -1, points: 2, ups: 1
+            #inc item authors points
+            Meteor.users.update item.authorId,
+                $inc: points: 2
 
-        #undo if upvoted
-        else if item.upvoters.indexOf(uid) > -1
+        #undo if upd
+        else if item.uppers.indexOf(uid) > -1
             Items.update itemId,
-                $pull: upvoters: uid
-                $inc: upvotes: -1, points: -1
+                $pull: uppers: uid
+                $inc: ups: -1, points: -1
+            #inc item authors points
+            Meteor.users.update item.authorId,
+                $inc: points: -1
 
+        #clean down
         else
             Items.update itemId,
-                $inc: points: 1, upvotes: 1
-                $addToSet: upvoters: uid
+                $inc: points: 1, ups: 1
+                $addToSet: uppers: uid
+            #inc item authors points
+            Meteor.users.update item.authorId,
+                $inc: points: 1
 
-    clickDownvote: (itemId)->
+    clickdown: (itemId)->
 
         item = Items.findOne itemId
         uid = Meteor.userId()
 
-        #toggle if upvoted
-        if item.upvoters.indexOf(uid) > -1
+        #toggle if upd
+        if item.uppers.indexOf(uid) > -1
             Items.update itemId,
-                $pull: upvoters: uid
-                $addToSet: downvoters: uid
-                $inc: upvotes: -1, points: -2, downvotes: 1
+                $pull: uppers: uid
+                $addToSet: downers: uid
+                $inc: ups: -1, points: -2, downs: 1
+            #inc item authors points
+            Meteor.users.update item.authorId,
+                $inc: points: -2
 
-        #undo if downvoted
-        else if item.downvoters.indexOf(uid) > -1
+
+        #undo if downd
+        else if item.downers.indexOf(uid) > -1
             Items.update itemId,
-                $pull: downvoters: uid
-                $inc: downvotes: -1, points: 1
+                $pull: downers: uid
+                $inc: downs: -1, points: 1
+            #inc item authors points
+            Meteor.users.update item.authorId,
+                $inc: points: 1
 
+        #clean down
         else
             Items.update itemId,
-                $inc: points: -1, downvotes: 1
-                $addToSet: downvoters: uid
+                $inc: points: -1, downs: 1
+                $addToSet: downers: uid
+            #inc item authors points
+            Meteor.users.update item.authorId,
+                $inc: points: -1
+
+    makeDayAuction: (itemId)->
+        item = Items.findOne itemId
+        dayFromNow = Date.now()+86400000
+        Items.update itemId,
+            $addToSet: tags: 'day auction'
+            $unset: ups:'',uppers:'',downs:'',downers:'',points:''
+            $set: isAuction: true, auctionEnd: dayFromNow, highBid: 0, highBidder: ''
 
 Items.before.insert (userId, doc) ->
     doc.timestamp = Date.now()
-    doc.owner = Meteor.userId()
-    doc.upvotes = 0
-    doc.upvoters = []
-    doc.downvotes = 0
-    doc.downvoters = []
+    doc.authorId = Meteor.userId()
+    doc.ups = 0
+    doc.uppers = []
+    doc.downs = 0
+    doc.downers = []
     doc.points = 0
+
+Meteor.users.before.insert
 
 if Meteor.isClient
     Session.setDefault 'editing', null
-    filter = new ReactiveArray []
+    tagFilter = new ReactiveArray []
+    authorFilter = new ReactiveArray []
 
     Accounts.ui.config
         passwordSignupFields: 'USERNAME_ONLY'
-    Tracker.autorun -> Meteor.subscribe 'items', filter.array()
-    Tracker.autorun -> Meteor.subscribe 'tags', filter.array()
+        #dropdownTransition: 'drop'
+        #dropdownClasses: 'pointing'
+    Tracker.autorun -> Meteor.subscribe 'tags', tagFilter.array(), authorFilter.array()
+    Tracker.autorun -> Meteor.subscribe 'items', tagFilter.array(), authorFilter.array()
     Meteor.subscribe 'users'
+
+    Template.home.onCreated ->
+        $(window).on 'keyup', (e) ->
+            if e.keyCode is 78 and e.shiftKey and e.altKey
+                newId = Items.insert {}
+                Session.set 'editing', newId
 
     Template.home.events
         'click .add': ->
             newId = Items.insert {}
             Session.set 'editing', newId
-        'click .filterTag': -> filter.push @name.toString()
-        'click .unfilterTag': -> filter.remove @toString()
+        'click .filterTag': -> tagFilter.push @name.toString()
+        'click .unfilterTag': -> tagFilter.remove @toString()
+
+        'click .unfilterAuthor': -> authorFilter.remove @toString()
+        'click .userCloudTag': (e)-> if tagFilter.array().indexOf(@name) is -1 then tagFilter.push @name
+
 
     Template.home.helpers
         globalTags: ->
             itemCount = Items.find().count()
             Tags.find {count: $lt: itemCount}, limit: 10
-        filterlist: -> filter.list()
+        tagFilterList: -> tagFilter.list()
+        authorFilterList: -> authorFilter.list()
         items: -> Items.find {}, sort: timestamp: -1
+        user: -> Meteor.user()
 
     Template.item.helpers
+        isAuction: -> @isAuction
         isEditing: -> Session.equals 'editing', @_id
-        isOwner: -> @owner is Meteor.userId()
+        isAuthor: -> @authorId is Meteor.userId()
 
-        canDownvote: -> Meteor.userId()
-        canUpvote: -> Meteor.userId()
-
-        canEdit: -> Meteor.userId()  is @owner
+        canEdit: -> Meteor.userId()  is @authorId
         canClone: -> Meteor.userId()
 
-        when: -> moment.utc(@timestamp).fromNow()
-        username: ->
-            owner = Meteor.users.findOne @owner
-            if owner then owner.username
+        whenCreated: -> moment.utc(@timestamp).fromNow()
+        whenEnd: -> moment.utc(@auctionEnd).fromNow()
 
-        upvoteButtonClass: -> if not Meteor.userId() or @owner is Meteor.userId() then 'disabled' else ''
-        downvoteButtonClass: -> if not Meteor.userId() or @owner is Meteor.userId() then 'disabled' else ''
+        authorPoints: ->
+            author = Meteor.users.findOne @authorId
+            if author then author.points
+        upButtonClass: -> if not Meteor.userId() or @authorId is Meteor.userId() then 'disabled' else ''
+        downButtonClass: -> if not Meteor.userId() or @authorId is Meteor.userId() then 'disabled' else ''
 
-        upvoteIconClass: -> if @upvoters.indexOf(Meteor.userId()) > -1 then 'thumbs up' else 'thumbs up outline'
-        downvoteIconClass: -> if @downvoters.indexOf(Meteor.userId()) > -1 then 'thumbs down' else 'thumbs down outline'
+        upIconClass: -> if @uppers.indexOf(Meteor.userId()) > -1 then 'thumbs up' else 'thumbs up outline'
+        downIconClass: -> if @downers.indexOf(Meteor.userId()) > -1 then 'thumbs down' else 'thumbs down outline'
 
+        authorButtonClass: ->
+            if @author()
+                name = @author().username
+                if authorFilter.array().indexOf(name) > -1 then 'disabled' else ''
 
     Template.item.events
-        'click .itemtag': (e)-> filter.push e.target.textContent
+        'click .itemtag': (e)->
+            tagName = e.target.textContent
+            if tagFilter.array().indexOf(tagName) is -1 then tagFilter.push tagName
 
         'click .edit': (e,t)->
             $('.viewarea').dimmer('show')
@@ -124,8 +178,10 @@ if Meteor.isClient
                 }
             Session.set 'editing', cloneId
 
-        'click .upvote': -> Meteor.call 'clickUpvote', @_id
-        'click .downvote': -> Meteor.call 'clickDownvote', @_id
+        'click .username': (e)-> authorFilter.push @author().username
+
+        'click .up': -> Meteor.call 'clickup', @_id
+        'click .down': -> Meteor.call 'clickdown', @_id
 
         'click .delete': ->
             $('.viewarea').dimmer('hide')
@@ -145,36 +201,80 @@ if Meteor.isClient
             allowAdditions: true
             placeholder: 'add tags'
             onAdd: (addedValue) ->
-                if addedValue is 'delete this' then Items.remove self.data._id
-                else Items.update self.data._id, $addToSet: tags: addedValue
+
+                switch addedValue
+                    when 'delete this'
+                        Items.remove self.data._id
+                        $('.viewarea').dimmer('hide')
+                        Meteor.call 'calcUserCloud', Meteor.userId()
+                    when 'day auction'
+                        Meteor.call 'makeDayAuction', self.data._id
+                        $('.viewarea').dimmer('hide')
+                        Meteor.call 'calcUserCloud', Meteor.userId()
+                    else
+                        Items.update self.data._id, $addToSet: tags: addedValue
+                        Meteor.call 'calcUserCloud', Meteor.userId()
+
+
             onRemove: (removedValue) -> Items.update self.data._id, $pull: tags: removedValue
 
 if Meteor.isServer
 
+    Accounts.onCreateUser (options, user) ->
+        user.points = 0
+        user.cloud = []
+        user
+
     Items.allow
-        insert: (userId, doc)-> doc.owner is userId
-        update: (userId, doc)-> doc.owner is userId
-        remove: (userId, doc)-> doc.owner is userId
-        fetch: [ 'owner' ]
+        insert: (userId, doc)-> doc.authorId is userId
+        update: (userId, doc)-> doc.authorId is userId
+        remove: (userId, doc)-> doc.authorId is userId
+        fetch: [ 'authorId' ]
+
+    Meteor.methods
+        calcUserCloud: (userId) ->
+            userCloud = Items.aggregate [
+                { $match: authorId: userId }
+                { $project: tags: 1 }
+                { $unwind: '$tags' }
+                { $group: _id: '$tags', count: $sum: 1 }
+                { $sort: count: -1 }
+                { $limit: 5 }
+                { $project: _id: 0, name: '$_id', count: 1 }
+                ]
+            Meteor.users.update {_id:userId}, {$set: {cloud: userCloud} }
+
 
     Meteor.publish 'users', ->
         Meteor.users.find()
 
-    Meteor.publish 'items', (filter)->
+    Meteor.publish 'items', (tagFilter, authorFilter)->
+
         match = {}
-        if filter.length > 0 then match.tags= $all: filter
+
+        if tagFilter.length > 0 then match.tags= $all: tagFilter
+
+        if authorFilter.length > 0
+            author = Meteor.users.findOne username: authorFilter[0]
+            match.authorId= author._id
+
         Items.find match, limit: 10
 
-    Meteor.publish 'tags', (filter)->
+    Meteor.publish 'tags', (tagFilter, authorFilter)->
         me = @
         match = {}
-        if filter.length > 0 then match.tags= $all: filter
+
+        if tagFilter.length > 0 then match.tags= $all: tagFilter
+
+        if authorFilter.length > 0
+            author = Meteor.users.findOne username: authorFilter[0]
+            match.authorId= author._id
         cloud = Items.aggregate [
             { $match: match }
             { $project: tags: 1 }
             { $unwind: '$tags' }
             { $group: _id: '$tags', count: $sum: 1 }
-            { $match: _id: $nin: filter }
+            { $match: _id: $nin: tagFilter }
             { $sort: count: -1 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]

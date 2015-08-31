@@ -16,4 +16,5 @@ chuangbo:marked
 accounts-password
 momentjs:moment
 matb33:collection-hooks
+dburles:collection-helpers
 accounts-ui
