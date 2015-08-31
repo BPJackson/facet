@@ -3,7 +3,7 @@
 
 Items.helpers
     author: -> Meteor.users.findOne @authorId
-
+    highBidder: -> if @highBidderId then Meteor.users.findOne @highBidderId
 Meteor.methods
     clickup: (itemId)->
 
@@ -77,8 +77,32 @@ Meteor.methods
         dayFromNow = Date.now()+86400000
         Items.update itemId,
             $addToSet: tags: 'day auction'
-            $unset: ups:'',uppers:'',downs:'',downers:'',points:''
-            $set: isAuction: true, auctionEnd: dayFromNow, highBid: 0, highBidder: ''
+            $unset: ups:'', uppers:'', downs:'', downers:'', points:''
+            $set: isAuction: true, auctionEnd: dayFromNow, highBid: 0,
+    bid: (itemId)->
+        uid = Meteor.userId()
+        item = Items.findOne itemId
+        currentBid = item.highBid
+        newBid = currentBid + 1
+
+        if item.highBidderId
+            if item.highBidderId is uid
+                Meteor.users.update uid,
+                    $inc: points: 1
+                Items.update itemId,
+                    $inc: highBid: 1
+
+            #else return points to previous highbidder
+            else Meteor.users.update item.highBidderId,
+                $inc: points: currentBid
+        #update auction
+        Items.update itemId,
+            $inc: highBid: 1
+            $set: highBidderId: uid
+        #charge new highbidder
+        Meteor.users.update uid,
+            $inc: points: -5
+
 
 Items.before.insert (userId, doc) ->
     doc.timestamp = Date.now()
@@ -120,7 +144,6 @@ if Meteor.isClient
         'click .unfilterAuthor': -> authorFilter.remove @toString()
         'click .userCloudTag': (e)-> if tagFilter.array().indexOf(@name) is -1 then tagFilter.push @name
 
-
     Template.home.helpers
         globalTags: ->
             itemCount = Items.find().count()
@@ -154,6 +177,18 @@ if Meteor.isClient
             if @author()
                 name = @author().username
                 if authorFilter.array().indexOf(name) > -1 then 'disabled' else ''
+        newBid: -> @highBid + 1
+        canBid: ->
+            userId = Meteor.userId()
+            if not userId then'disabled'
+            else if @authorId is Meteor.userId()
+                console.log "you're the author, can't bid"
+                'disabled'
+            else if (Meteor.user().points < @highBid)
+                console.log "not enough points, can't bid"
+                'disabled'
+            else ''
+
 
     Template.item.events
         'click .itemtag': (e)->
@@ -186,6 +221,8 @@ if Meteor.isClient
         'click .delete': ->
             $('.viewarea').dimmer('hide')
             Items.remove @_id
+
+        'click .bid': -> Meteor.call 'bid', @_id
 
     Template.editing.events
         'keyup input, keyup textarea':(e,t)->
@@ -269,6 +306,8 @@ if Meteor.isServer
         if authorFilter.length > 0
             author = Meteor.users.findOne username: authorFilter[0]
             match.authorId= author._id
+
+
         cloud = Items.aggregate [
             { $match: match }
             { $project: tags: 1 }

@@ -50,10 +50,11 @@ template(name='item')
                 #{body}
             p ends #{whenEnd}
             p high bid: #{highBid}
-            p high bidder: #{highBidder}
-            .ui.basic.button
+            p high bidder: #{highBidder.username}
+            p author: #{author.username}
+            .ui.basic.button.bid(class=canBid)
                 |bid
-                | #{highBid} + 1
+                | #{newBid}
     unless isAuction
         if isEditing
             .editarea
