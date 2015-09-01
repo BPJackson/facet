@@ -49,8 +49,8 @@ template(name='item')
             +markdown
                 #{body}
             p ends #{whenEnd}
-            p high bid: #{highBid}
-            p high bidder: #{highBidder.username}
+            p high bid: #{bid}
+            p high bidder: #{bidder.username}
             p author: #{author.username}
             .ui.basic.button.bid(class=canBid)
                 |bid
@@ -78,13 +78,13 @@ template(name='item')
                             i.fork.icon
                             |clone
                     .ui.basic.small.buttons
-                        .ui.small.button.up(class=upButtonClass)
+                        .ui.button.upvote(class=upButtonClass)
                             i.icon(class=upIconClass)
-                            | #{ups}
-                        .ui.small.button.down(class=downButtonClass)
+                            | #{upvotes}
+                        .ui.button.downvote(class=downButtonClass)
                             i.icon(class=downIconClass)
-                            | #{downs}
-                    .ui.top.right.attached.label #{points}
+                            | #{downvotes}
+                    .ui.top.right.attached.label #{points} points
                     .ui.basic.small.button.username(class=authorButtonClass)
                         i.user.icon
                         | #{author.username}
