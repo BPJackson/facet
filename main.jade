@@ -51,7 +51,7 @@ template(name='item')
             p ends #{whenEnd}
             p high bid: #{bid}
             p high bidder: #{bidder.username}
-            p author: #{author.username}
+            p author: #{author.username} #{author.points}
             .ui.button.bid(class=canBid)
                 |bid
                 | #{newBid}
