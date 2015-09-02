@@ -7,110 +7,54 @@ Items.helpers
 
 
 Meteor.methods
-    clickVoteButton: (itemId, direction)->
-
+    vote: (itemId)->
         item = Items.findOne itemId
         me = Meteor.userId()
 
-        if direction is 'up'
-            # if I've upvoted, undo upvote
-            if item.upvoters.indexOf(me) > -1
-                Meteor.call 'undovote', itemId, 'up', (err)-> if err then console.err err
-
-            # if I've downvoted, undo downvote
-            if item.downvoters.indexOf(me) > -1
-                Meteor.call 'undovote', itemId, 'down', (err)-> if err then console.err err
-                Meteor.call 'vote', itemId, 'up', (err)-> if err then console.err err
-
-            else Meteor.call 'vote', itemId, 'up', (err)-> if err then console.err err
-
-        if direction is 'down'
-            # if I've downvoted, undo downvote
-            if item.downvoters.indexOf(me) > -1
-                Meteor.call 'undovote', itemId, 'down', (err)-> if err then console.err err
-
-            # if I've upvoted, undo upvote
-            if item.upvoters.indexOf(me) > -1
-                Meteor.call 'undovote', itemId, 'up', (err)-> if err then console.err err
-                Meteor.call 'vote', itemId, 'down', (err)-> if err then console.err err
-
-            else Meteor.call 'vote', itemId, 'down', (err)-> if err then console.err err
-
-    vote: (itemId, direction)->
-        item = Items.findOne itemId
-
-        if direction is 'up'
-            Items.update itemId, {
-                $inc:
-                    points: 1
-                    upvotes: 1
-                $addToSet: upvoters: Meteor.userId()
-            },(err)-> if err then console.err err
-
-            Meteor.call 'changeUserPoints', item.authorId, 1, (err)-> if err then console.err err
-
-        if direction is 'down'
+        #if already a voter, undo the vote
+        if item.voters.indexOf(me) > -1
             Items.update itemId,{
-                $inc:
-                    points: -1
-                    downvotes: 1
-                $addToSet: downvoters: Meteor.userId()
-            },(err)-> if err then console.err err
+                $inc: votes: -1
+                $pull: voters: me
+            },(err)->
+                if err then console.error err
+                Meteor.call 'changeUserPoints', item.authorId, -1, (err)-> if err then console.error err
 
-            Meteor.call 'changeUserPoints', item.authorId, -1, (err)-> if err then console.err err
-
-
-    undovote:  (itemId, direction)->
-        item = Items.findOne itemId
-        me = Meteor.userId()
-        if direction is 'up'
-
-            Meteor.call 'changeUserPoints', item.authorId, -1, (err)-> if err then console.log err
+        else #if not a voter, vote
             Items.update itemId, {
-                $pull:
-                    upvoters: me
-                $inc:
-                    upvotes: -1
-                    points: -1
-            },(err)-> if err then console.error err
+                $inc: votes: 1
+                $addToSet: voters: me
+            },(err)->
+                if err then console.error err
+                Meteor.call 'changeUserPoints', item.authorId, 1, (err)-> if err then console.error err
 
-        if direction is 'down'
-            Items.update itemId, {
-                $pull:
-                    downvoters: Meteor.userId()
-                $inc:
-                    downvotes: -1
-                    points: 1
-            },(err)-> if err then console.err err
 
-            Meteor.call 'changeUserPoints', item.authorId, 1, (err)-> if err then console.err err
-
-    isIn: (string, array)-> if array.indexOf(string) > -1 then true else false
 
     makeDayAuction: (itemId)->
         auction = Items.findOne itemId
         dayFromNow = Date.now() + 86400000 # 1000ms * 60s * 60min * 24hr
         Items.update itemId,
             $addToSet: tags: 'day auction'
-            $unset: upvotes:'', upvoters:'', downvotes:'', downvoters:'', points:''
+            $unset: votes:'', voters:''
             $set: isAuction: true, auctionEnd: dayFromNow, bid: 0,
 
     changeUserPoints: (uid, amount)-> Meteor.users.update uid, $inc: points: amount
 
-    givePoints: (giverId, points, receiverId)->
-        Meteor.call 'changeUserPoints', receiverId, points
-        Meteor.call 'changeUserPoints', giverId, points
+    transferPoints: (giverId, points, receiverId)->
+        Meteor.call 'changeUserPoints', receiverId, points, (err)-> if err then console.error err
+        Meteor.call 'changeUserPoints', giverId, points, (err)-> if err then console.error err
 
     bid: (itemId)->
         me = Meteor.userId()
         item = Items.findOne itemId
 
-        Meteor.call 'givePoints', me, 1, item.author, (err)-> if err then console.err err
+        Meteor.call 'transferPoints', me, 1, item.author, (err)-> if err then console.error err
 
 
-        Items.update itemId,
+        Items.update itemId,{
             $inc: bid: 1
             $set: bidderId: me
+        },(err)-> if err then console.error err
 
     placeBid: (itemId)->
         me = Meteor.userId()
@@ -119,18 +63,15 @@ Meteor.methods
         bid = item.bid
         bidder = item.bidderId
 
-        if bidder? and bidder is not me then Meteor.call 'givePoints', me, bid, bidder, (err)-> if err then console.err err
-        Meteor.call 'bid', itemId
+        if bidder? and bidder is not me then Meteor.call 'transferPoints', me, bid, bidder, (err)-> if err then console.error err
+        Meteor.call 'bid', itemId, (err)-> if err then console.error err
 
 
 Items.before.insert (userId, doc) ->
     doc.timestamp = Date.now()
     doc.authorId = Meteor.userId()
-    doc.upvotes = 0
-    doc.upvoters = []
-    doc.downvotes = 0
-    doc.downvoters = []
-    doc.points = 0
+    doc.voters = []
+    doc.votes = 0
 
 if Meteor.isClient
     Session.setDefault 'editing', null
@@ -170,11 +111,12 @@ if Meteor.isClient
 
     Template.item.helpers
         isAuction: -> @isAuction
+
         isEditing: -> Session.equals 'editing', @_id
+
         isAuthor: -> @authorId is Meteor.userId()
 
-        canEdit: -> Meteor.userId()  is @authorId
-        canClone: -> Meteor.userId()
+        canEdit: -> Meteor.userId() is @authorId
 
         whenCreated: -> moment.utc(@timestamp).fromNow()
         whenEnd: -> moment.utc(@auctionEnd).fromNow()
@@ -182,23 +124,20 @@ if Meteor.isClient
         authorPoints: ->
             author = Meteor.users.findOne @authorId
             if author then author.points
-        upButtonClass: -> if not Meteor.userId() or @authorId is Meteor.userId() then 'disabled' else ''
-        downButtonClass: -> if not Meteor.userId() or @authorId is Meteor.userId() then 'disabled' else ''
 
-        upIconClass: ->
-            if @upvoters.indexOf(Meteor.userId()) > -1 then 'thumbs up' else 'thumbs up outline'
-        downIconClass: ->
-            if @downvoters.indexOf(Meteor.userId()) > -1 then 'thumbs down' else 'thumbs down outline'
+        voteButtonClass: -> if not Meteor.userId() or @authorId is Meteor.userId() then 'disabled' else ''
+
+        voteIconClass: -> if @voters.indexOf(Meteor.userId()) > -1 then 'thumbs up' else 'thumbs up outline'
 
         authorButtonClass: ->
             if @author()
                 name = @author().username
-                if Meteor.call 'isIn', name, authorFilter.array() then 'disabled' else ''
+                if authorFilter.array().indexOf(name) > -1 then 'disabled' else ''
 
         newBid: -> @bid + 1
         canBid: ->
             userId = Meteor.userId()
-            if not userId then'disabled'
+            if not userId then 'disabled'
             else if @authorId is Meteor.userId() then 'disabled'
             else if Meteor.user().points < @bid then 'disabled'
             else ''
@@ -215,33 +154,23 @@ if Meteor.isClient
 
         'click .save': (e,t)->
             val = t.find('textarea').value
-            Items.update @_id, $set: body: val
+            Items.update @_id, $set: body: val, (err)-> if err then console.error err
 
             $('.viewarea').dimmer('hide')
             Session.set 'editing', null
 
-        'click .clone': (e)->
-            $('.viewarea').dimmer('show')
-            cloneId = Items.insert {
-                tags: @tags
-                body: @body
-                }
-            Session.set 'editing', cloneId
-
         'click .username': (e)-> authorFilter.push @author().username
 
-        'click .upvote': -> Meteor.call 'clickVoteButton', @_id, 'up'
-        'click .downvote': -> Meteor.call 'clickVoteButton', @_id, 'down'
+        'click .vote': -> Meteor.call 'vote', @_id, (err)-> if err then console.error err
 
         'click .delete': ->
             $('.viewarea').dimmer('hide')
-            Items.remove @_id
+            Items.remove @_id, (err)-> if err then console.error err
 
-        'click .bid': -> Meteor.call 'placeBid', @_id
+        'click .bid': -> Meteor.call 'placeBid', @_id, (err)-> if err then console.error err
 
     Template.editing.events
         'keyup input, keyup textarea':(e,t)->
-
             #control-c to save body input
             if (event.keyCode is 10 or event.keyCode is 13) and event.ctrlKey
 

@@ -52,7 +52,7 @@ template(name='item')
             p high bid: #{bid}
             p high bidder: #{bidder.username}
             p author: #{author.username}
-            .ui.basic.button.bid(class=canBid)
+            .ui.button.bid(class=canBid)
                 |bid
                 | #{newBid}
     unless isAuction
@@ -70,26 +70,15 @@ template(name='item')
                     #{body}
                 .extra
                     if isAuthor
-                        .ui.basic.small.button.edit
+                        .ui.button.edit
                             i.edit.icon
                             |edit
-                    if canClone
-                        .ui.basic.small.button.clone
-                            i.fork.icon
-                            |clone
-                    .ui.basic.small.buttons
-                        .ui.button.upvote(class=upButtonClass)
-                            i.icon(class=upIconClass)
-                            | #{upvotes}
-                        .ui.button.downvote(class=downButtonClass)
-                            i.icon(class=downIconClass)
-                            | #{downvotes}
-                    .ui.top.right.attached.label #{points} points
-                    .ui.basic.small.button.username(class=authorButtonClass)
+                    .ui.button.vote(class=voteButtonClass)
+                        i.icon(class=voteIconClass)
+                        | #{votes}
+                    .ui.button.username(class=authorButtonClass)
                         i.user.icon
-                        | #{author.username}
-                        .ui.circular.label #{author.points}
-                        // i.cloud.icon`
+                        | #{author.username} #{author.points}
                         each author.cloud
                             .ui.small.label #{name} #{count}
                     // .ui.label created #{whenCreated}
@@ -102,9 +91,9 @@ template(name='editing')
         .field: textarea.bs(placeholder='add markdown')= body
     .ui.hidden.fitted.divider
     .extra
-        .ui.basic.active.button.save
+        .ui.active.button.save
             |save
             small (ctrl enter)
-        .ui.basic.icon.button.delete
+        .ui.icon.button.delete
             i.remove.icon
             |delete
