@@ -20,20 +20,21 @@ template(name='home')
                 each user.cloud
                     .ui.small.label.userCloudTag #{name} #{points}
     .ui.fitted.divider
-    .ui.vertical.inverted.segment
+    .ui.vertical.segment
         each authorFilterList
-            .ui.compact.button.unfilterAuthor
+            .ui.compact.big.active.button.unfilterAuthor
                 i.user.icon
                 strong #{this}
                 i.icon.remove
         each tagFilterList
-            .ui.compact.button.unfilterTag
+            .ui.compact.big.active.button.unfilterTag
                 strong #{this}
                 i.icon.remove
         each globalTags
-            .ui.compact.secondary.button.filterTag
+            .ui.compact.large.button.filterTag
                 |#{name}
                 small #{count}
+    // .ui.divider
     .ui.segments.nope
         each items
             .ui.segment
@@ -65,7 +66,7 @@ template(name='item')
                 .content
                     .ui.large.grey.labels
                         each tags
-                            .ui.label.itemtag #{this}
+                            .ui.basic.label.itemtag #{this}
                 +markdown
                     #{body}
                 .extra

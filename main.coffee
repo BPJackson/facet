@@ -72,7 +72,6 @@ if Meteor.isClient
             authorFilter.clear()
 
             newId = Items.insert {}
-            #Session.set 'mode', 'add'
             Session.set 'editing', newId
         'click .filterTag': -> tagFilter.push @name.toString()
         'click .unfilterTag': -> tagFilter.remove @toString()
@@ -86,8 +85,7 @@ if Meteor.isClient
             Tags.find {count: $lt: itemCount}, limit: 10
         tagFilterList: -> tagFilter.list()
         authorFilterList: -> authorFilter.list()
-        #items: -> if Session.equals 'mode','add' then Items.find {}, limit: 1 else Items.find {}
-        items: -> Items.find {}, sort: {timestamp: -1}
+        items: -> Items.find {}, sort: {timestamp: -1}, limit: 7
         user: -> Meteor.user()
 
     Template.item.helpers

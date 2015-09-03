@@ -8,15 +8,18 @@
     display: inline !important
 }
 
-/*body {*/
-/*    background-color: darkgrey;*/
-/*}*/
+.ui.segment {
+    background-color: whitesmoke !important
+}
 
 .nope {
     margin-top: 0 !important
 }
 
-/*body {*/
-/*    margin-top: 70px;*/
+body {
+    background-color: grey;
+}
 
-/*}*/
+.ui.button {
+    margin: .5em 0.25em 0em 0em !important
+}
