@@ -27,7 +27,7 @@ template(name='home')
                 strong #{this}
                 i.icon.remove
         each tagFilterList
-            .ui.inverted.compact.button.unfilterTag
+            .ui.compact.button.unfilterTag
                 strong #{this}
                 i.icon.remove
         each globalTags
@@ -50,7 +50,7 @@ template(name='item')
                 #{body}
             p ends #{whenEnd}
             p high bid: #{bid}
-            p high bidder: #{bidder.username}
+            p high bidder: #{bidder.username} #{bidder.points}
             p author: #{author.username} #{author.points}
             .ui.button.bid(class=canBid)
                 |bid
@@ -69,19 +69,23 @@ template(name='item')
                 +markdown
                     #{body}
                 .extra
-                    if isAuthor
-                        .ui.button.edit
-                            i.edit.icon
-                            |edit
-                    .ui.button.vote(class=voteButtonClass)
-                        i.icon(class=voteIconClass)
-                        | #{votes}
-                    .ui.button.username(class=authorButtonClass)
-                        i.user.icon
-                        | #{author.username} #{author.points}
-                        each author.cloud
-                            .ui.small.label #{name} #{count}
-                    // .ui.label created #{whenCreated}
+                    if currentUser
+                        if isAuthor
+                            .ui.small.button.edit
+                                i.edit.icon
+                                |edit
+                        .ui.small.button.clone
+                            i.fork.icon
+                            |clone
+                        .ui.small.button.vote(class=voteButtonClass)
+                            i.icon(class=voteIconClass)
+                            | #{votes}
+                        // .ui.segment.username(class=authorButtonClass)
+                        //     i.user.icon
+                        //     | #{author.username} #{author.points}
+                        //     each author.cloud
+                        //         .ui.small.label #{name} #{count}
+                        // | created #{whenCreated}
 
 template(name='editing')
     .ui.form

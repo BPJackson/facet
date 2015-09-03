@@ -68,7 +68,11 @@ if Meteor.isClient
 
     Template.home.events
         'click .add': ->
+            tagFilter.clear()
+            authorFilter.clear()
+
             newId = Items.insert {}
+            #Session.set 'mode', 'add'
             Session.set 'editing', newId
         'click .filterTag': -> tagFilter.push @name.toString()
         'click .unfilterTag': -> tagFilter.remove @toString()
@@ -82,7 +86,8 @@ if Meteor.isClient
             Tags.find {count: $lt: itemCount}, limit: 10
         tagFilterList: -> tagFilter.list()
         authorFilterList: -> authorFilter.list()
-        items: -> Items.find {}, sort: timestamp: -1
+        #items: -> if Session.equals 'mode','add' then Items.find {}, limit: 1 else Items.find {}
+        items: -> Items.find {}, sort: {timestamp: -1}
         user: -> Meteor.user()
 
     Template.item.helpers
@@ -91,7 +96,6 @@ if Meteor.isClient
         isEditing: -> Session.equals 'editing', @_id
 
         isAuthor: -> @authorId is Meteor.userId()
-
         canEdit: -> Meteor.userId() is @authorId
 
         whenCreated: -> moment.utc(@timestamp).fromNow()
@@ -127,11 +131,19 @@ if Meteor.isClient
         'click .edit': (e,t)->
             $('.viewarea').dimmer('show')
             Session.set 'editing', @_id
+        'click .clone': (e)->
+            $('.viewarea').dimmer('show')
+            cloneId = Items.insert {
+                tags: @tags
+                body: @body
+                }
+            Session.set 'editing', cloneId
 
         'click .save': (e,t)->
             val = t.find('textarea').value
             Items.update @_id, $set: body: val, (err)-> if err then console.error err
 
+            if Session.equals 'mode','add' then Session.set 'mode', null
             $('.viewarea').dimmer('hide')
             Session.set 'editing', null
 
@@ -154,6 +166,7 @@ if Meteor.isClient
                 val = t.find('textarea').value
                 Items.update @_id, $set: body: val
 
+                if Session.equals 'mode','add' then Session.set 'mode', null
                 $('.viewarea').dimmer('hide')
                 Session.set 'editing', null
 
@@ -163,7 +176,6 @@ if Meteor.isClient
             allowAdditions: true
             placeholder: 'add tags'
             onAdd: (addedValue) ->
-
                 switch addedValue
                     when 'delete this'
                         Items.remove self.data._id
@@ -176,8 +188,6 @@ if Meteor.isClient
                     else
                         Items.update self.data._id, $addToSet: tags: addedValue
                         Meteor.call 'calcUserCloud', Meteor.userId()
-
-
             onRemove: (removedValue) -> Items.update self.data._id, $pull: tags: removedValue
 
 if Meteor.isServer
@@ -221,7 +231,7 @@ if Meteor.isServer
             author = Meteor.users.findOne username: authorFilter[0]
             match.authorId= author._id
 
-        Items.find match, limit: 10
+        Items.find match
 
     Meteor.publish 'tags', (tagFilter, authorFilter)->
         self = @
