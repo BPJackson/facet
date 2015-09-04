@@ -20,42 +20,42 @@ template(name='home')
                 each user.cloud
                     .ui.small.label.userCloudTag #{name} #{points}
     .ui.fitted.divider
-    .ui.vertical.segment
-        each authorFilterList
-            .ui.compact.big.active.button.unfilterAuthor
-                i.user.icon
-                strong #{this}
-                i.icon.remove
-        each tagFilterList
-            .ui.compact.big.active.button.unfilterTag
-                strong #{this}
-                i.icon.remove
-        each globalTags
-            .ui.compact.large.button.filterTag
-                |#{name}
-                small #{count}
-    // .ui.divider
-    .ui.segments.nope
+    unless $.Session.get 'addId'
+        .ui.vertical.segment.tagCloud
+            each authorFilterList
+                .ui.compact.right.labeled.icon.active.button.unfilterAuthor
+                    i.user.icon
+                    strong #{this}
+            each tagFilterList
+                .ui.compact.right.labeled.icon.active.button.unfilterTag
+                    strong #{this}
+                    i.icon.remove
+            each globalTags
+                .ui.compact.small.button.filterTag
+                    |#{name}
+                    small #{count}
+    .ui.fitted.divider
+    .ui.segments.notop
         each items
             .ui.segment
                 +item
 template(name='item')
     if isAuction
-        .auction.viewarea
-            .ui.inverted.dimmer
-            .content
-                .ui.large.grey.labels
-                    each tags
-                        .ui.label.itemtag #{this}
-            +markdown
-                #{body}
-            p ends #{whenEnd}
-            p high bid: #{bid}
-            p high bidder: #{bidder.username} #{bidder.points}
-            p author: #{author.username} #{author.points}
-            .ui.button.bid(class=canBid)
-                |bid
-                | #{newBid}
+        // .auction.viewarea
+        //     .ui.inverted.dimmer
+        //     .content
+        //         .ui.large.grey.labels
+        //             each tags
+        //                 .ui.label.itemtag #{this}
+        //     +markdown
+        //         #{body}
+        //     p ends #{whenEnd}
+        //     p high bid: #{bid}
+        //     p high bidder: #{bidder.username} #{bidder.points}
+        //     p author: #{author.username} #{author.points}
+        //     .ui.button.bid(class=canBid)
+        //         |bid
+        //         | #{newBid}
     unless isAuction
         if isEditing
             .editarea
@@ -81,12 +81,12 @@ template(name='item')
                         .ui.small.button.vote(class=voteButtonClass)
                             i.icon(class=voteIconClass)
                             | #{votes}
-                        // .ui.segment.username(class=authorButtonClass)
-                        //     i.user.icon
-                        //     | #{author.username} #{author.points}
-                        //     each author.cloud
-                        //         .ui.small.label #{name} #{count}
-                        // | created #{whenCreated}
+                        | created #{whenCreated}
+                        .ui.segment.username(class=authorButtonClass)
+                            i.user.icon
+                            | #{author.username} #{author.points}
+                            each userShortCloud
+                                .ui.small.label #{name} #{count}
 
 template(name='editing')
     .ui.form
