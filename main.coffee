@@ -113,7 +113,7 @@ if Meteor.isClient
         voteIconClass: -> if @voters.indexOf(Meteor.userId()) > -1 then 'thumbs up' else 'thumbs up outline'
 
         userShortCloud: ->
-            @author().cloud.slice 0,2
+            @author().cloud.slice 0,14
 
         authorButtonClass: ->
             if @author()
@@ -158,7 +158,7 @@ if Meteor.isClient
             Session.set 'addId', null
 
         'click .username': (e)->
-            if authorFilter.array().indexOf @author().username > -1 then authorFilter.push @author().username
+            unless authorFilter.array().indexOf(@author().username) > -1 then authorFilter.push @author().username
 
         'click .vote': ->
             Meteor.call 'vote', @_id
