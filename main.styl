@@ -3,19 +3,20 @@
     -moz-box-sizing border-box
     box-sizing border-box
 
-.blocked
-    display inline !important
+.ui.segment
+    background-color whitesmoke !important
 
-.ui
-    &.segment
-        background-color whitesmoke !important
-    &.button
-        margin .25em 0.25em 0.25em 0.25em !important
+.tagCloud > .ui.button, .itemContent > .ui.button
+    margin .25em 0.25em 0.25em 0.25em !important
+
 .ui.segment.tagCloud
-    // background-color greycloud !important
+    padding .25em .25em
+
+.itemContent > .button.itemtag
+    margin-bottom .25em !important
 
 .ui.segment.username > .label
-    margin: .14em .14em
+    margin .14em .14em
 
 .notop
     margin-top 0 !important

@@ -22,12 +22,11 @@ Meteor.methods
             Meteor.users.update item.authorId, $inc: points: 1
             return
 
-    makeDayAuction: (itemId)->
+    auctionize: (itemId)->
         auction = Items.findOne itemId
         dayFromNow = Date.now() + 86400000
         Items.update itemId,
-            $addToSet: tags: 'day auction'
-            $unset: votes:'', voters:''
+            $addToSet: tags: 'auction'
             $set: isAuction: true, auctionEnd: dayFromNow, bid: 0,
 
 
@@ -52,13 +51,15 @@ Items.before.insert (userId, doc) ->
 if Meteor.isClient
     Session.setDefault 'editing', null
     Session.setDefault 'addId', null
-    tagFilter = new ReactiveArray []
-    authorFilter = new ReactiveArray []
+    selectedTags = new ReactiveArray []
+    selectedAuthor = new ReactiveArray []
 
 
-    Accounts.ui.config passwordSignupFields: 'USERNAME_ONLY'
-    Tracker.autorun -> Meteor.subscribe 'tags', tagFilter.array(), authorFilter.array()
-    Tracker.autorun -> Meteor.subscribe 'items', tagFilter.array(), authorFilter.array(), Session.get 'addId'
+    Accounts.ui.config 
+        dropdownClasses: 'simple'
+        passwordSignupFields: 'USERNAME_ONLY'
+    Tracker.autorun -> Meteor.subscribe 'tags', selectedTags.array(), selectedAuthor.array()
+    Tracker.autorun -> Meteor.subscribe 'items', selectedTags.array(), selectedAuthor.array(), Session.get 'addId'
 
     Meteor.subscribe 'users'
 
@@ -66,61 +67,104 @@ if Meteor.isClient
         $(window).on 'keyup', (e) ->
             #alt shift n to add
             if e.keyCode is 78 and e.shiftKey and e.altKey
+                selectedTags.clear()
+                selectedAuthor.clear()
+
                 newId = Items.insert {}
+
+                Session.set 'addId', newId
                 Session.set 'editing', newId
-
-    Template.home.events
-        'click .add': ->
-            tagFilter.clear()
-            authorFilter.clear()
-
-            newId = Items.insert {}
-            Session.set 'addId', newId
-            Session.set 'editing', newId
-        'click .filterTag': -> tagFilter.push @name.toString()
-        'click .unfilterTag': -> tagFilter.remove @toString()
-
-        'click .unfilterAuthor': -> authorFilter.remove @toString()
-        'click .userCloudTag': (e)-> if tagFilter.array().indexOf(@name) is -1 then tagFilter.push @name
-
+    
     Template.home.helpers
         globalTags: ->
             itemCount = Items.find().count()
             if itemCount is 0 then Tags.find {}
             else Tags.find {count: $lt: itemCount}
-        tagFilterList: -> tagFilter.list()
-        authorFilterList: -> authorFilter.list()
-        items: -> Items.find {}, sort: {timestamp: -1}, limit: 7
-        user: -> Meteor.user()
 
+        selectedTags: -> selectedTags.list()
+        
+        selectedAuthor: -> selectedAuthor.list()
+
+        items: -> Items.find {}, sort: {timestamp: -1}, limit: 7
+
+        user: -> Meteor.user()
+        
+        myShortCloud: -> 
+            if Meteor.user().cloud then Meteor.user().cloud.slice 0,7
+        
+        addButtonClass: -> if Session.get 'addId' then 'active' else ''
+        
+        userCloudTagClass: -> 
+            if @name is 'auction' then 'green'
+            else if selectedTags.array().indexOf(@name) > -1 then 'disabled' else ''
+        
+        globalTagsClass: -> if @name is 'auction' then 'green' else ''
+        
+        selectedTagsClass: -> if @valueOf() is 'auction' then 'green' else ''
+   
+    Template.home.events
+        'click .home': -> 
+            selectedTags.clear()
+            selectedAuthor.clear()
+        'click .add': ->
+            if Session.get 'addId' then return
+            else 
+                selectedTags.clear()
+                selectedAuthor.clear()
+    
+                newId = Items.insert {}
+                
+                Session.set 'addId', newId
+                Session.set 'editing', newId
+            
+        'click .selectTag': ->
+            GAnalytics.event('tagSelect',@name)
+            GAnalytics.pageview(@name)
+            selectedTags.push @name.toString()
+        
+        'click .unselectTag': -> selectedTags.remove @toString()
+
+        'click .unselectAuthor': -> selectedAuthor.remove @toString()
+        'click .userCloudTag': (e)-> 
+            if selectedTags.array().indexOf(@name) is -1 then selectedTags.push @name.toString()
+            else selectedTags.remove @name.toString()
     Template.item.helpers
         isAuction: -> @isAuction
 
         isEditing: -> Session.equals 'editing', @_id
 
         isAuthor: -> @authorId is Meteor.userId()
+
         canEdit: -> Meteor.userId() is @authorId
 
         whenCreated: -> moment.utc(@timestamp).fromNow()
+
         whenEnd: -> moment.utc(@auctionEnd).fromNow()
 
         authorPoints: ->
             author = Meteor.users.findOne @authorId
             if author then author.points
 
-        voteButtonClass: -> if not Meteor.userId() or @authorId is Meteor.userId() then 'disabled' else ''
-
         voteIconClass: -> if @voters.indexOf(Meteor.userId()) > -1 then 'thumbs up' else 'thumbs up outline'
 
-        userShortCloud: ->
-            @author().cloud.slice 0,14
+        voteButtonClass: -> if not Meteor.userId() or @authorId is Meteor.userId() then 'disabled' else ''
+
+        otherUserShortCloud: -> @author().cloud.slice 0,7
+
+
+        userCloudTagClass: -> if selectedTags.array().indexOf(@name) > -1 then 'basic~' else ''
+
+        itemTagClass: ->
+            if @valueOf() is 'auction' then 'green'
+            else if selectedTags.array().indexOf(@valueOf()) > -1 then 'active' else ''
 
         authorButtonClass: ->
             if @author()
                 name = @author().username
-                if authorFilter.array().indexOf(name) > -1 then 'disabled' else ''
+                if selectedAuthor.array().indexOf(name) > -1 then 'active' else ''
 
         newBid: -> @bid + 1
+
         canBid: ->
             userId = Meteor.userId()
             if not userId then 'disabled'
@@ -131,14 +175,17 @@ if Meteor.isClient
 
     Template.item.events
         'click .itemtag': (e)->
-            tagName = e.target.textContent
-            if tagFilter.array().indexOf(tagName) is -1 then tagFilter.push tagName
+            Session.set 'editing', null
+            if selectedTags.array().indexOf(@toString()) is -1 then selectedTags.push @toString()
+            else selectedTags.remove @toString()
 
         'click .edit': (e,t)->
-            $('.viewarea').dimmer('show')
+            item = Items.findOne @_id
+            item.tags.forEach (tag) -> if selectedTags.array().indexOf(tag) is -1 then selectedTags.push tag
+
             Session.set 'editing', @_id
+
         'click .clone': (e)->
-            $('.viewarea').dimmer('show')
             cloneId = Items.insert {
                 tags: @tags
                 body: @body
@@ -151,20 +198,25 @@ if Meteor.isClient
 
             item = Items.findOne @_id
 
-            if Session.get 'addId' then item.tags.forEach (tag)-> tagFilter.push tag
+            if Session.get 'addId' then item.tags.forEach (tag)-> selectedTags.push tag
 
-            $('.viewarea').dimmer('hide')
             Session.set 'editing', null
             Session.set 'addId', null
 
+        'click .auctionize': -> 
+            #Session.set 'editing', null
+            #Session.set 'addId', null
+            Meteor.call 'auctionize', @_id
+
+
         'click .username': (e)->
-            unless authorFilter.array().indexOf(@author().username) > -1 then authorFilter.push @author().username
+            if selectedAuthor.array().indexOf(@author().username) is -1 then selectedAuthor.push @author().username
+            else selectedAuthor.remove @author().username
 
         'click .vote': ->
             Meteor.call 'vote', @_id
 
         'click .delete': ->
-            $('.viewarea').dimmer('hide')
             Items.remove @_id
             Session.set 'addId', null
             Session.set 'editing', null
@@ -182,7 +234,7 @@ if Meteor.isClient
 
                 item = Items.findOne @_id
 
-                if Session.get 'addId' then item.tags.forEach (tag)-> tagFilter.push tag
+                if Session.get 'addId' then item.tags.forEach (tag)-> selectedTags.push tag
 
                 Session.set 'addId', null
                 Session.set 'editing', null
@@ -193,9 +245,21 @@ if Meteor.isClient
             allowAdditions: true
             placeholder: 'add tags'
             onAdd: (addedValue) ->
-                Items.update self.data._id, $addToSet: tags: addedValue
-                Meteor.call 'calcUserCloud', Meteor.userId()
+                switch addedValue
+                    when 'delete this'
+                        Items.remove self.data._id
+                        Meteor.call 'calcUserCloud', Meteor.userId()
+                    when 'auction'
+                        Meteor.call 'auctionize', self.data._id
+                        Meteor.call 'calcUserCloud', Meteor.userId()
+                    else
+                        Items.update self.data._id, $addToSet: tags: addedValue
+                        Meteor.call 'calcUserCloud', Meteor.userId()
+
+
+
             onRemove: (removedValue) ->
+                selectedTags.remove removedValue.toString()
                 Items.update self.data._id, $pull: tags: removedValue
                 Meteor.call 'calcUserCloud', Meteor.userId()
 
@@ -209,15 +273,14 @@ if Meteor.isServer
         insert: (userId, doc)-> doc.authorId is userId
         update: (userId, doc)-> true
         remove: (userId, doc)-> doc.authorId is userId
+ 
     Meteor.users.allow
         insert: (userId, doc)-> true
         update: (userId, doc)-> userId
         remove: (userId, doc)-> false
 
     Meteor.methods
-
         calcUserCloud: (userId) ->
-
             userCloud = Items.aggregate [
                 { $match: authorId: userId }
                 { $project: tags: 1 }
@@ -226,35 +289,31 @@ if Meteor.isServer
                 { $sort: count: -1 }
                 { $project: _id: 0, name: '$_id', count: 1 }
                 ]
-
             Meteor.users.update { _id: userId }, $set: cloud: userCloud
 
 
     Meteor.publish 'users', ->
         Meteor.users.find()
 
-    Meteor.publish 'items', (tagFilter, authorFilter, addId)->
+    Meteor.publish 'items', (selectedTags, selectedAuthor, addId)->
+        match = {}
 
         if addId? then return Items.find addId
 
-        match = {}
-
-        if tagFilter.length > 0 then match.tags= $all: tagFilter else return null
-
-        if authorFilter.length > 0
-            author = Meteor.users.findOne username: authorFilter[0]
+        if selectedTags.length > 0 then match.tags= $all: selectedTags else return null
+        if selectedAuthor.length > 0
+            author = Meteor.users.findOne username: selectedAuthor[0]
             match.authorId= author._id
-
         return Items.find match
 
-    Meteor.publish 'tags', (tagFilter, authorFilter)->
+    Meteor.publish 'tags', (selectedTags, selectedAuthor)->
         self = @
         match = {}
 
-        if tagFilter.length > 0 then match.tags= $all: tagFilter
+        if selectedTags.length > 0 then match.tags= $all: selectedTags
 
-        if authorFilter.length > 0
-            author = Meteor.users.findOne username: authorFilter[0]
+        if selectedAuthor.length > 0
+            author = Meteor.users.findOne username: selectedAuthor[0]
             match.authorId= author._id
 
 
@@ -263,7 +322,7 @@ if Meteor.isServer
             { $project: tags: 1 }
             { $unwind: '$tags' }
             { $group: _id: '$tags', count: $sum: 1 }
-            { $match: _id: $nin: tagFilter }
+            { $match: _id: $nin: selectedTags }
             { $sort: count: -1 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]

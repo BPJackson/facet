@@ -16,11 +16,11 @@ accounts-password
 momentjs:moment
 matb33:collection-hooks@0.8.0
 dburles:collection-helpers
-accounts-ui
 meteorhacks:kadira
 perak:markdown
-okgrow:analytics
 kadira:debug
 meteorhacks:kadira-profiler
 mquandalle:stylus
 raix:handlebar-helpers
+datariot:ganalytics
+iandouglas:accounts-ui-semantic-ui

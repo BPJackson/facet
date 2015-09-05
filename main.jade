@@ -9,96 +9,91 @@ body
 
 template(name='home')
     .ui.compact.inverted.fluid.menu
-        .item
-            +loginButtons
+        a.item.header.home
+             |facet
         if currentUser
-            .item #{user.points}
-            a.item.add
-                |add (alt shift n)
-            .item
-                |my cloud:
-                each user.cloud
-                    .ui.small.label.userCloudTag #{name} #{points}
+            a.item.add(class=addButtonClass)
+                i.add.icon 
+        +loginButtons
+        .item
+            if currentUser
+                strong #{user.points}
+                each myShortCloud
+                    a.ui.inverted.black.label.userCloudTag(class=userCloudTagClass) #{name}
     .ui.fitted.divider
     unless $.Session.get 'addId'
         .ui.vertical.segment.tagCloud
-            each authorFilterList
-                .ui.compact.right.labeled.icon.active.button.unfilterAuthor
+            each selectedAuthor
+                .ui.compact.large.active.button.unselectAuthor
                     i.user.icon
                     strong #{this}
-            each tagFilterList
-                .ui.compact.right.labeled.icon.active.button.unfilterTag
+            each selectedTags
+                .ui.compact.large.active.button.unselectTag(class=selectedTagsClass)
                     strong #{this}
-                    i.icon.remove
             each globalTags
-                .ui.compact.small.button.filterTag
+                .ui.compact.fade.button.selectTag(class=globalTagsClass)
                     |#{name}
-                    small #{count}
+                    // small #{count}
     .ui.fitted.divider
     .ui.segments.notop
         each items
             .ui.segment
                 +item
+
 template(name='item')
     if isAuction
-        // .auction.viewarea
-        //     .ui.inverted.dimmer
-        //     .content
-        //         .ui.large.grey.labels
-        //             each tags
-        //                 .ui.label.itemtag #{this}
-        //     +markdown
-        //         #{body}
-        //     p ends #{whenEnd}
-        //     p high bid: #{bid}
-        //     p high bidder: #{bidder.username} #{bidder.points}
-        //     p author: #{author.username} #{author.points}
-        //     .ui.button.bid(class=canBid)
-        //         |bid
-        //         | #{newBid}
+        .auction.viewarea
+            .ui.buttons
+                each tags
+                    .ui.button.itemtag(class=itemTagClass) #{this}
+            +markdown
+                #{body}
+            p ends #{whenEnd}
+            p high bid: #{bid}
+            p high bidder: #{bidder.username} #{bidder.points}
+            p author: #{author.username} #{author.points}
+            .ui.button.bid(class=canBid)
+                |bid
+                | #{newBid}
     unless isAuction
         if isEditing
             .editarea
                 +editing
         else
-            .viewarea
-                .ui.inverted.dimmer
-                .content
-                    .ui.large.grey.labels
-                        each tags
-                            .ui.basic.label.itemtag #{this}
+            // .ui.buttons
+            each tags
+                .ui.button.itemtag(class=itemTagClass) #{this}
+            .ui.segment.itemContent
                 +markdown
                     #{body}
-                .extra
-                    if currentUser
-                        if isAuthor
-                            .ui.small.button.edit
-                                i.edit.icon
-                                |edit
-                        .ui.small.button.clone
-                            i.fork.icon
-                            |clone
-                        .ui.small.button.vote(class=voteButtonClass)
-                            i.icon(class=voteIconClass)
-                            | #{votes}
-                        | created #{whenCreated}
-                        .ui.segment.username(class=authorButtonClass)
-                            i.user.icon
-                            | #{author.username} #{author.points}
-                            each userShortCloud
-                                .ui.small.label #{name} #{count}
+                if currentUser
+                    if isAuthor
+                        .ui.button.edit
+                            |edit
+                    .ui.button.clone
+                        |clone
+                    .ui.button.vote(class=voteButtonClass)
+                        i.icon(class=voteIconClass)
+                        | #{votes}
+                    .ui.button.username(class=authorButtonClass)
+                        i.user.icon
+                        | #{author.username} #{author.points}
+                        each otherUserShortCloud
+                            .ui.label(class=userCloudTagClass) #{name}
+                    .ui.basic.label #{whenCreated}
 
 template(name='editing')
-    .ui.form
-        .field: select#tagselector.bs.ui.multiple.search(multiple='true')
-            each tags
-                option(value=this selected='selected')= this
-        .field: textarea.bs(placeholder='add markdown')= body
-    .ui.hidden.fitted.divider
-    .extra
-        .ui.active.button.save
-            |save
-            small (ctrl enter)
-        .ui.icon.button.delete
+    unless isAuction
+        .ui.form
+            .field: select#tagselector.bs.ui.multiple.search(multiple='true')
+                each tags
+                    option(value=this selected='selected') #{this}
+            .field: textarea.bs(placeholder='add markdown')  #{body}
+        .ui.hidden.fitted.divider
+    .bottomGroup
+        .ui.icon.button.save
+            i.checkmark.icon
+        .ui.icon.right.floated.button.auctionize
+            i.legal.icon
+        .ui.icon.right.floated.button.delete
             i.remove.icon
-            |delete
