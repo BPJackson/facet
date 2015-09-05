@@ -18,34 +18,29 @@ template(name='home')
         .item
             if currentUser
                 strong #{user.points}
-                each myShortCloud
-                    a.ui.inverted.black.label.userCloudTag(class=userCloudTagClass) #{name}
     .ui.fitted.divider
     unless $.Session.get 'addId'
-        .ui.vertical.segment.tagCloud
-            each selectedAuthor
-                .ui.compact.large.active.button.unselectAuthor
-                    i.user.icon
-                    strong #{this}
-            each selectedTags
-                .ui.compact.large.active.button.unselectTag(class=selectedTagsClass)
-                    strong #{this}
-            each globalTags
-                .ui.compact.fade.button.selectTag(class=globalTagsClass)
-                    |#{name}
-                    // small #{count}
-    .ui.fitted.divider
-    .ui.segments.notop
-        each items
-            .ui.segment
-                +item
+        unless $.Session.get 'editing'
+            .ui.vertical.segment.tagCloud
+                each selectedAuthor
+                    .ui.small.compact.active.button.unselectAuthor
+                        i.user.icon
+                        strong #{this}
+                each selectedTags
+                    .ui.small.compact.active.button.unselectTag(class=selectedTagsClass)
+                        strong #{this}
+                each globalTags
+                    .ui.small.compact.button.selectTag(class=globalTagsClass)
+                        |#{name}
+    each items
+        +item
 
 template(name='item')
     if isAuction
-        .auction.viewarea
+        .auction.ui.segment
             .ui.buttons
                 each tags
-                    .ui.button.itemtag(class=itemTagClass) #{this}
+                    .ui.small.compact.button.itemtag(class=itemTagClass) #{this}
             +markdown
                 #{body}
             p ends #{whenEnd}
@@ -55,34 +50,34 @@ template(name='item')
             .ui.button.bid(class=canBid)
                 |bid
                 | #{newBid}
+            if isAuthor
+                .ui.icon.button.edit
+                    i.icon.pencil
+
     unless isAuction
         if isEditing
-            .editarea
+            .ui.segment
                 +editing
         else
-            // .ui.buttons
-            each tags
-                .ui.button.itemtag(class=itemTagClass) #{this}
             .ui.segment.itemContent
+                each tags
+                    .ui.small.compact.button.itemtag(class=itemTagClass) #{this}
                 +markdown
                     #{body}
                 if currentUser
-                    if isAuthor
-                        .ui.button.edit
-                            |edit
-                    .ui.button.clone
-                        |clone
-                    .ui.button.vote(class=voteButtonClass)
-                        i.icon(class=voteIconClass)
-                        | #{votes}
-                    .ui.button.username(class=authorButtonClass)
-                        i.user.icon
-                        | #{author.username} #{author.points}
-                        each otherUserShortCloud
-                            .ui.label(class=userCloudTagClass) #{name}
-                    .ui.basic.label #{whenCreated}
-
+                    .itemModifiers
+                        if isAuthor
+                            .ui.icon.small.button.edit
+                                i.icon.pencil
+                        .ui.small.button.vote(class=voteButtonClass)
+                            i.icon(class=voteIconClass)
+                            | #{votes}
+                        .ui.small.button.username(class=authorButtonClass)
+                            i.user.icon
+                            | #{author.username} #{author.points}
 template(name='editing')
+    if isAuction
+        .ui.button.cancel cancel
     unless isAuction
         .ui.form
             .field: select#tagselector.bs.ui.multiple.search(multiple='true')
@@ -90,10 +85,8 @@ template(name='editing')
                     option(value=this selected='selected') #{this}
             .field: textarea.bs(placeholder='add markdown')  #{body}
         .ui.hidden.fitted.divider
-    .bottomGroup
-        .ui.icon.button.save
-            i.checkmark.icon
-        .ui.icon.right.floated.button.auctionize
-            i.legal.icon
-        .ui.icon.right.floated.button.delete
-            i.remove.icon
+        .bottomGroup
+            .ui.icon.button.save
+                i.checkmark.icon
+            .ui.icon.right.floated.button.delete
+                i.remove.icon

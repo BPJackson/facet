@@ -85,27 +85,18 @@ if Meteor.isClient
         
         selectedAuthor: -> selectedAuthor.list()
 
-        items: -> Items.find {}, sort: {timestamp: -1}, limit: 7
+        items: -> Items.find {}, sort: {timestamp: -1}, limit: 1
 
         user: -> Meteor.user()
         
-        myShortCloud: -> 
-            if Meteor.user().cloud then Meteor.user().cloud.slice 0,7
-        
         addButtonClass: -> if Session.get 'addId' then 'active' else ''
         
-        userCloudTagClass: -> 
-            if @name is 'auction' then 'green'
-            else if selectedTags.array().indexOf(@name) > -1 then 'disabled' else ''
-        
-        globalTagsClass: -> if @name is 'auction' then 'green' else ''
-        
-        selectedTagsClass: -> if @valueOf() is 'auction' then 'green' else ''
-   
     Template.home.events
         'click .home': -> 
             selectedTags.clear()
             selectedAuthor.clear()
+            Session.set 'addId', null
+            Session.set 'editing', null
         'click .add': ->
             if Session.get 'addId' then return
             else 
@@ -149,13 +140,8 @@ if Meteor.isClient
 
         voteButtonClass: -> if not Meteor.userId() or @authorId is Meteor.userId() then 'disabled' else ''
 
-        otherUserShortCloud: -> @author().cloud.slice 0,7
-
-
-        userCloudTagClass: -> if selectedTags.array().indexOf(@name) > -1 then 'basic~' else ''
-
         itemTagClass: ->
-            if @valueOf() is 'auction' then 'green'
+            if @valueOf() is 'auction' then ''
             else if selectedTags.array().indexOf(@valueOf()) > -1 then 'active' else ''
 
         authorButtonClass: ->
@@ -180,17 +166,10 @@ if Meteor.isClient
             else selectedTags.remove @toString()
 
         'click .edit': (e,t)->
-            item = Items.findOne @_id
-            item.tags.forEach (tag) -> if selectedTags.array().indexOf(tag) is -1 then selectedTags.push tag
+            #item = Items.findOne @_id
+            #item.tags.forEach (tag) -> if selectedTags.array().indexOf(tag) is -1 then selectedTags.push tag
 
             Session.set 'editing', @_id
-
-        'click .clone': (e)->
-            cloneId = Items.insert {
-                tags: @tags
-                body: @body
-                }
-            Session.set 'editing', cloneId
 
         'click .save': (e,t)->
             val = t.find('textarea').value
@@ -203,12 +182,6 @@ if Meteor.isClient
             Session.set 'editing', null
             Session.set 'addId', null
 
-        'click .auctionize': -> 
-            #Session.set 'editing', null
-            #Session.set 'addId', null
-            Meteor.call 'auctionize', @_id
-
-
         'click .username': (e)->
             if selectedAuthor.array().indexOf(@author().username) is -1 then selectedAuthor.push @author().username
             else selectedAuthor.remove @author().username
@@ -218,6 +191,7 @@ if Meteor.isClient
 
         'click .delete': ->
             Items.remove @_id
+            selectedTags.clear()
             Session.set 'addId', null
             Session.set 'editing', null
             Meteor.call 'calcUserCloud', Meteor.userId()
