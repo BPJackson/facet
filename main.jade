@@ -11,17 +11,15 @@ template(name='home')
     .ui.compact.inverted.fluid.menu
         a.item.header.home
              |facet
-        if currentUser
-            a.item.add(class=addButtonClass)
-                i.add.icon 
         +loginButtons
         .item
             if currentUser
-                strong #{user.points}
-    .ui.fitted.divider
+                h5 #{user.points}
+        a.right.item.add(class=addButtonClass)
+            i.add.icon 
     unless $.Session.get 'addId'
         unless $.Session.get 'editing'
-            .ui.vertical.segment.tagCloud
+            .ui.attached.segment.tagCloud
                 each selectedAuthor
                     .ui.small.compact.active.button.unselectAuthor
                         i.user.icon
@@ -33,60 +31,38 @@ template(name='home')
                     .ui.small.compact.button.selectTag(class=globalTagsClass)
                         |#{name}
     each items
-        +item
+        .ui.segment
+            +item
 
 template(name='item')
-    if isAuction
-        .auction.ui.segment
-            .ui.buttons
-                each tags
-                    .ui.small.compact.button.itemtag(class=itemTagClass) #{this}
+    if isEditing
+        +editing
+    else
+        .itemContent
+            each tags
+                .ui.small.compact.button.itemtag(class=itemTagClass) #{this}
             +markdown
                 #{body}
-            p ends #{whenEnd}
-            p high bid: #{bid}
-            p high bidder: #{bidder.username} #{bidder.points}
-            p author: #{author.username} #{author.points}
-            .ui.button.bid(class=canBid)
-                |bid
-                | #{newBid}
-            if isAuthor
-                .ui.icon.button.edit
-                    i.icon.pencil
-
-    unless isAuction
-        if isEditing
-            .ui.segment
-                +editing
-        else
-            .ui.segment.itemContent
-                each tags
-                    .ui.small.compact.button.itemtag(class=itemTagClass) #{this}
-                +markdown
-                    #{body}
-                if currentUser
-                    .itemModifiers
-                        if isAuthor
-                            .ui.icon.small.button.edit
-                                i.icon.pencil
-                        .ui.small.button.vote(class=voteButtonClass)
-                            i.icon(class=voteIconClass)
-                            | #{votes}
-                        .ui.small.button.username(class=authorButtonClass)
-                            i.user.icon
-                            | #{author.username} #{author.points}
+            if currentUser
+                .itemModifiers
+                    if isAuthor
+                        .ui.icon.small.button.edit
+                            i.icon.pencil
+                    .ui.small.button.vote(class=voteButtonClass)
+                        i.icon(class=voteIconClass)
+                        | #{votes}
+                    .ui.small.button.username(class=authorButtonClass)
+                        i.user.icon
+                        | #{author.username} #{author.points}
 template(name='editing')
-    if isAuction
-        .ui.button.cancel cancel
-    unless isAuction
-        .ui.form
-            .field: select#tagselector.bs.ui.multiple.search(multiple='true')
-                each tags
-                    option(value=this selected='selected') #{this}
-            .field: textarea.bs(placeholder='add markdown')  #{body}
-        .ui.hidden.fitted.divider
-        .bottomGroup
-            .ui.icon.button.save
-                i.checkmark.icon
-            .ui.icon.right.floated.button.delete
-                i.remove.icon
+    .ui.form
+        .field: select#tagselector.bs.ui.multiple.search(multiple='true')
+            each tags
+                option(value=this selected='selected') #{this}
+        .field: textarea.bs(placeholder='add markdown')  #{body}
+    .ui.hidden.fitted.divider
+    .bottomGroup
+        .ui.icon.button.save
+            i.checkmark.icon
+        .ui.icon.right.floated.button.delete
+            i.remove.icon
