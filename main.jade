@@ -8,21 +8,24 @@ body
     +facet
 
 template(name='facet')
-    .ui.compact.inverted.fluid.menu
-        a.item.header.home
-             |facet
-        +loginButtons
-        unless $.Session.get 'editing'
-            a.right.item.add
-                i.add.icon 
-    unless $.Session.get 'adding'
+    unless $.Session.get 'editing'
         .ui.attached.center.aligned.segment.tagCloud
             each selected
                 .ui.compact.active.button.unselect
                     strong #{this}
+            
             each tags
                 .ui.compact.button.select
                     |#{name}
+    each docs
+        +doc
+    .ui.compact.inverted.menu
+        .item
+            +loginButtons
+        if currentUser
+            unless $.Session.get 'editing'
+                a.item.add add
+template(name='doc')
     .ui.center.aligned.segment
         if isEditing
             +editing
@@ -32,15 +35,15 @@ template(name='facet')
                     .ui.item #{this}
             .ui.container
                 |{{nl2br body}}
-            if isAuthor
+            if canEdit
+                .ui.hidden.fitted.divider
                 .ui.icon.small.button.edit
                     i.icon.pencil
+
 template(name='editing')
     .ui.form
-        .field: select#tagselector.bs.ui.multiple.search(multiple='true')
-            each tags
-                option(value=this selected='selected') #{this}
-        .field: textarea.bs(placeholder='add markdown')  #{body}
+        +editableList collection="docs" field="tags"
+        .field: textarea.bs #{body}
     .ui.hidden.fitted.divider
     .bottomGroup
         .ui.icon.large.button.save
