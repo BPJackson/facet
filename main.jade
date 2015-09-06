@@ -5,57 +5,36 @@ head
     meta(name='apple-mobile-web-app-status-bar-style', content='black')
     meta(name='format-detection', content='telephone=no')
 body
-    +home
+    +facet
 
-template(name='home')
+template(name='facet')
     .ui.compact.inverted.fluid.menu
         a.item.header.home
              |facet
         +loginButtons
-        .item
-            if currentUser
-                h5 #{user.points}
         unless $.Session.get 'editing'
             a.right.item.add
                 i.add.icon 
     unless $.Session.get 'adding'
-        unless $.Session.get 'editing'
-            .ui.attached.center.aligned.segment.tagCloud
-                each selectedAuthor
-                    .ui.compact.active.button.unselectAuthor
-                        i.user.icon
-                        strong #{this}
-                each selectedTags
-                    .ui.compact.active.button.unselectTag
-                        strong #{this}
-                each globalTags
-                    .ui.compact.button.selectTag
-                        |#{name}
-    each items
-        .ui.center.aligned.segment
-            +item
-
-template(name='item')
-    if isEditing
-        +editing
-    else
-        .ui.large.header.horizontal.list
+        .ui.attached.center.aligned.segment.tagCloud
+            each selected
+                .ui.compact.active.button.unselect
+                    strong #{this}
             each tags
-                .ui.item #{this}
-        .ui.container
-            |{{nl2br body}}
-        .ui.hidden.divider
-        if currentUser
-            .itemModifiers
-                if isAuthor
-                    .ui.icon.small.button.edit
-                        i.icon.pencil
-                .ui.small.button.vote(class=voteButtonClass)
-                    i.icon(class=voteIconClass)
-                    | #{votes}
-                .ui.small.button.username
-                    i.user.icon
-                    | #{author.username} #{author.points}
+                .ui.compact.button.select
+                    |#{name}
+    .ui.center.aligned.segment
+        if isEditing
+            +editing
+        else
+            .ui.large.header.horizontal.list
+                each tags
+                    .ui.item #{this}
+            .ui.container
+                |{{nl2br body}}
+            if isAuthor
+                .ui.icon.small.button.edit
+                    i.icon.pencil
 template(name='editing')
     .ui.form
         .field: select#tagselector.bs.ui.multiple.search(multiple='true')

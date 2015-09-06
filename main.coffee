@@ -1,112 +1,58 @@
 @Tags = new Meteor.Collection 'tags'
-@Items = new Meteor.Collection 'items'
-
-Items.helpers
-    author: -> Meteor.users.findOne @authorId
-
-Meteor.methods
-    vote: (itemId)->
-        item = Items.findOne itemId
-        me = Meteor.userId()
-        
-        if item.voters.indexOf(me) > -1
-            Items.update itemId, $inc: {votes: -1}, $pull: voters: me
-            Meteor.users.update item.authorId, $inc: points: -1
-            return
-        else
-            Items.update itemId, $inc: {votes: 1}, $addToSet: voters: me
-            Meteor.users.update item.authorId, $inc: points: 1
-            return
+@Docs = new Meteor.Collection 'docs'
 
 if Meteor.isClient
     Session.setDefault 'editing', null
     Session.setDefault 'adding', null
-    selectedTags = new ReactiveArray []
-    selectedAuthor = new ReactiveArray []
-
+    selected = new ReactiveArray []
 
     Accounts.ui.config 
         dropdownClasses: 'simple'
         passwordSignupFields: 'USERNAME_ONLY'
-    Tracker.autorun -> Meteor.subscribe 'tags', selectedTags.array(), selectedAuthor.array()
-    Tracker.autorun -> Meteor.subscribe 'items', selectedTags.array(), selectedAuthor.array(), Session.get 'adding'
+    Tracker.autorun -> Meteor.subscribe 'tags', selected.array()
+    Tracker.autorun -> Meteor.subscribe 'docs', selected.array(), Session.get 'adding'
 
-    Meteor.subscribe 'users'
-    
-    Template.home.helpers
-        globalTags: -> Tags.find {}
+    Template.facet.helpers
 
-        selectedTags: -> selectedTags.list()
+        selected: -> selected.list()
+
+        tags: -> Tags.find {}
         
-        selectedAuthor: -> selectedAuthor.list()
+        docs: -> Docs.find {}, sort: {timestamp: -1}, limit: 1
+        isEditing: -> Session.equals 'editing', @_id
+        canEdit: -> Meteor.userId() is @authorId
 
-        items: -> Items.find {}, sort: {timestamp: -1}, limit: 1
-
-        user: -> Meteor.user()
-        
-    Template.home.events
+    Template.facet.events
         'click .home': -> 
-            selectedTags.clear()
-            selectedAuthor.clear()
+            selected.clear()
             Session.set 'adding', null
             Session.set 'editing', null
         'click .add': ->
-            if Session.get 'adding' then return
-            else 
-                #selectedTags.clear()
-                #selectedAuthor.clear()
-                
-                newId = Items.insert {
-                    timestamp: Date.now()
-                    authorId: Meteor.userId()
-                    voters: []
-                    votes: 0
-                    }
-                
-                Session.set 'adding', newId
-                Session.set 'editing', newId
+            newId = Docs.insert {
+                timestamp: Date.now()
+                authorId: Meteor.userId()
+                }
             
-        'click .selectTag': -> selectedTags.push @name.toString()
-        'click .unselectTag': -> selectedTags.remove @toString()
-        'click .unselectAuthor': -> selectedAuthor.remove @toString()
-        
-    Template.item.helpers
-        isEditing: -> Session.equals 'editing', @_id
+            Session.set 'adding', newId
+            Session.set 'editing', newId
+            
+        'click .select': -> selected.push @name.toString()
+        'click .unselect': -> selected.remove @toString()
 
-        isAuthor: -> @authorId is Meteor.userId()
-
-        canEdit: -> Meteor.userId() is @authorId
-
-        authorPoints: ->
-            author = Meteor.users.findOne @authorId
-            if author then author.points
-
-        voteIconClass: -> if @voters.indexOf(Meteor.userId()) > -1 then 'thumbs up' else 'thumbs up outline'
-
-        voteButtonClass: -> if not Meteor.userId() or @authorId is Meteor.userId() then 'disabled' else ''
-
-    Template.item.events
         'click .edit': (e,t)-> Session.set 'editing', @_id
-
         'click .save': (e,t)->
             val = t.find('textarea').value
-            Items.update @_id, $set: body: val
+            Docs.update @_id, $set: body: val
 
-            item = Items.findOne @_id
-            if Session.get 'adding' then item.tags.forEach (tag)-> selectedTags.push tag
+            item = Docs.findOne @_id
+            if Session.get 'adding' then item.tags.forEach (tag)-> selected.push tag
 
             Session.set 'editing', null
             Session.set 'adding', null
 
-        'click .username': (e)->
-            selectedTags.clear()
-            selectedAuthor.push @author().username
-
-        'click .vote': -> Meteor.call 'vote', @_id
-
         'click .delete': ->
-            Items.remove @_id
-            selectedTags.clear()
+            docs.remove @_id
+            selected.clear()
             Session.set 'adding', null
             Session.set 'editing', null
 
@@ -115,65 +61,38 @@ if Meteor.isClient
         @$('#tagselector').dropdown
             allowAdditions: true
             placeholder: 'add tags'
-            onAdd: (addedValue) -> Items.update self.data._id, $addToSet: tags: addedValue
+            onAdd: (addedValue) -> Docs.update self.data._id, $addToSet: tags: addedValue
             onRemove: (removedValue) ->
-                selectedTags.remove removedValue.toString()
-                Items.update self.data._id, $pull: tags: removedValue
+                selected.remove removedValue.toString()
+                Docs.update self.data._id, $pull: tags: removedValue
 
 if Meteor.isServer
-    Accounts.onCreateUser (options, user) ->
-        user.points = 0
-        user.cloud = []
-        user
-
-    Items.allow
+    Docs.allow
         insert: (userId, doc)-> doc.authorId is userId
-        update: (userId, doc)-> true
+        update: (userId, doc)-> doc.authorId is userId
         remove: (userId, doc)-> doc.authorId is userId
  
-    Meteor.users.allow
-        insert: (userId, doc)-> true
-        update: (userId, doc)-> userId
-        remove: (userId, doc)-> false
-
-
-    Meteor.publish 'users', -> Meteor.users.find {}, 
-        fields: 
-            username:1
-            points: 1
-
-    Meteor.publish 'items', (selectedTags, selectedAuthor, adding)->
+    Meteor.publish 'docs', (selected, adding)->
         match = {}
+        if adding? then return Docs.find adding
+        if selected.length > 0 then match.tags= $all: selected else return null
+        return Docs.find match, limit: 1
 
-        if adding? then return Items.find adding
-
-        if selectedTags.length > 0 then match.tags= $all: selectedTags else return null
-        if selectedAuthor.length > 0
-            author = Meteor.users.findOne username: selectedAuthor[0]
-            match.authorId= author._id
-        return Items.find match, limit: 1
-
-    Meteor.publish 'tags', (selectedTags, selectedAuthor)->
+    Meteor.publish 'tags', (selected)->
         self = @
         match = {}
 
-        if selectedTags.length > 0 then match.tags= $all: selectedTags
+        if selected.length > 0 then match.tags= $all: selected
 
-        if selectedAuthor.length > 0
-            author = Meteor.users.findOne username: selectedAuthor[0]
-            match.authorId= author._id
-
-
-        cloud = Items.aggregate [
+        cloud = Docs.aggregate [
             { $match: match }
             { $project: tags: 1 }
             { $unwind: '$tags' }
             { $group: _id: '$tags', count: $sum: 1 }
-            { $match: _id: $nin: selectedTags }
+            { $match: _id: $nin: selected }
             { $sort: count: -1 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
-
 
         cloud.forEach (tag) ->
             self.added 'tags', Random.id(),
