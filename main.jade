@@ -15,45 +15,47 @@ template(name='home')
         .item
             if currentUser
                 h5 #{user.points}
-        a.right.item.add(class=addButtonClass)
-            i.add.icon 
-    unless $.Session.get 'addId'
         unless $.Session.get 'editing'
-            .ui.attached.segment.tagCloud
+            a.right.item.add
+                i.add.icon 
+    unless $.Session.get 'adding'
+        unless $.Session.get 'editing'
+            .ui.attached.center.aligned.segment.tagCloud
                 each selectedAuthor
-                    .ui.small.compact.active.button.unselectAuthor
+                    .ui.compact.active.button.unselectAuthor
                         i.user.icon
                         strong #{this}
                 each selectedTags
-                    .ui.small.compact.active.button.unselectTag(class=selectedTagsClass)
+                    .ui.compact.active.button.unselectTag
                         strong #{this}
                 each globalTags
-                    .ui.small.compact.button.selectTag(class=globalTagsClass)
+                    .ui.compact.button.selectTag
                         |#{name}
     each items
-        .ui.segment
+        .ui.center.aligned.segment
             +item
 
 template(name='item')
     if isEditing
         +editing
     else
-        .itemContent
+        .ui.large.header.horizontal.list
             each tags
-                .ui.small.compact.button.itemtag(class=itemTagClass) #{this}
-            +markdown
-                #{body}
-            if currentUser
-                .itemModifiers
-                    if isAuthor
-                        .ui.icon.small.button.edit
-                            i.icon.pencil
-                    .ui.small.button.vote(class=voteButtonClass)
-                        i.icon(class=voteIconClass)
-                        | #{votes}
-                    .ui.small.button.username(class=authorButtonClass)
-                        i.user.icon
-                        | #{author.username} #{author.points}
+                .ui.item #{this}
+        .ui.container
+            |{{nl2br body}}
+        .ui.hidden.divider
+        if currentUser
+            .itemModifiers
+                if isAuthor
+                    .ui.icon.small.button.edit
+                        i.icon.pencil
+                .ui.small.button.vote(class=voteButtonClass)
+                    i.icon(class=voteIconClass)
+                    | #{votes}
+                .ui.small.button.username
+                    i.user.icon
+                    | #{author.username} #{author.points}
 template(name='editing')
     .ui.form
         .field: select#tagselector.bs.ui.multiple.search(multiple='true')
@@ -62,7 +64,7 @@ template(name='editing')
         .field: textarea.bs(placeholder='add markdown')  #{body}
     .ui.hidden.fitted.divider
     .bottomGroup
-        .ui.icon.button.save
+        .ui.icon.large.button.save
             i.checkmark.icon
-        .ui.icon.right.floated.button.delete
+        .ui.right.floated.icon.small.button.delete
             i.remove.icon

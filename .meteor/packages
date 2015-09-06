@@ -10,14 +10,11 @@ mquandalle:jade@0.4.3_1
 meteorhacks:aggregate@1.3.0
 manuel:reactivearray
 babrahams:constellation@0.1.6
-semantic:ui@2.1.0
+semantic:ui@2.1.3
 flemay:less-autoprefixer
 accounts-password
-momentjs:moment
-matb33:collection-hooks@0.8.0
 dburles:collection-helpers
 meteorhacks:kadira
-perak:markdown
 kadira:debug
 meteorhacks:kadira-profiler
 mquandalle:stylus
