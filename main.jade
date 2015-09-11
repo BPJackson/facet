@@ -5,48 +5,65 @@ head
     meta(name='apple-mobile-web-app-status-bar-style', content='black')
     meta(name='format-detection', content='telephone=no')
 body
-    +facet
+    +menu
+    .ui.main
+        +cloud
 
-template(name='facet')
+template(name='menu')
+    .ui.fixed.inverted.menu
+        a.header.item.home Facet
+        +loginButtons
+        if currentUser
+            unless $.Session.get 'editing'
+                a.icon.item.add 
+                    i.plus.icon
+
+template(name='cloud')
     unless $.Session.get 'editing'
         .ui.attached.center.aligned.segment.tagCloud
             each selected
-                .ui.compact.active.button.unselect
-                    strong #{this}
+                .ui.compact.right.labeled.icon.active.button.unselect
+                    i.minus.icon
+                    | #{this}
             
             each tags
                 .ui.compact.button.select
                     |#{name}
+                    // small #{count}
     each docs
         +doc
-    .ui.compact.inverted.menu
-        .item
-            +loginButtons
-        if currentUser
-            unless $.Session.get 'editing'
-                a.item.add add
 template(name='doc')
-    .ui.center.aligned.segment
+    .ui.segment.docContent
         if isEditing
             +editing
         else
-            .ui.large.header.horizontal.list
+            .ui.text.container
                 each tags
-                    .ui.item #{this}
-            .ui.container
-                |{{nl2br body}}
-            if canEdit
-                .ui.hidden.fitted.divider
-                .ui.icon.small.button.edit
-                    i.icon.pencil
+                    .ui.small.button.postTag(class=postButtonClass) #{this}
+                .ui.hidden.divider
+                .froala-view
+                    |!{body}
+                .ui.hidden.divider
+                if canEdit
+                    .ui.labeled.icon.button.edit
+                        i.icon.pencil
+                        |Edit
+                .ui.labeled.icon.button.clone
+                    i.fork.icon
+                    |Clone
+
 
 template(name='editing')
     .ui.form
-        +editableList collection="docs" field="tags"
-        .field: textarea.bs #{body}
-    .ui.hidden.fitted.divider
+        .field
+            +editableList collection="docs" field="tags" liStyle="margin: 15px 5px 0 0;" class="ui header"
+        .field
+            textarea#edit.bs #{body}
+    .ui.hidden.divider
     .bottomGroup
-        .ui.icon.large.button.save
+        .ui.labeled.icon.button.save
             i.checkmark.icon
-        .ui.right.floated.icon.small.button.delete
+            |Save
+        .ui.right.floated.labeled.icon.button.delete
             i.remove.icon
+            |Delete

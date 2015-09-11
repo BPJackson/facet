@@ -8,22 +8,26 @@ if Meteor.isClient
 
     Accounts.ui.config 
         passwordSignupFields: 'USERNAME_ONLY'
-    
+        dropdownClasses: 'simple'
+        
     Tracker.autorun -> Meteor.subscribe 'tags', selected.array()
     Tracker.autorun -> Meteor.subscribe 'docs', selected.array(), Session.get 'editing'
 
-    Template.facet.helpers
+    Template.cloud.helpers
         selected: -> selected.list()
         tags: -> 
             docCount = Docs.find().count()
             if docCount > 0 then Tags.find {count: $lt: docCount} else Tags.find()
         docs: -> Docs.find {}
+
         
     Template.doc.helpers
         isEditing: -> Session.equals 'editing', @_id
+        postButtonClass: -> if selected.array().indexOf(@valueOf()) > -1 then 'active' else ''
+
         canEdit: -> Meteor.userId() is @authorId
 
-    Template.facet.events
+    Template.menu.events
         'click .home': -> 
             selected.clear()
             Session.set 'editing', null
@@ -33,16 +37,28 @@ if Meteor.isClient
                 timestamp: Date.now()
                 authorId: Meteor.userId()
                 }
-            
             Session.set 'editing', newId
             selected.clear()
             
+    Template.cloud.events
         'click .select': -> selected.push @name.toString()
         
         'click .unselect': -> selected.remove @toString()
     
     Template.doc.events
         'click .edit': (e,t)-> Session.set 'editing', @_id
+        'click .postTag': (e)->
+            Session.set 'editing', null
+            if selected.array().indexOf(@toString()) is -1 then selected.push @toString()
+            else selected.remove @toString()
+
+        'click .clone': (e)->
+            cloneId = Docs.insert {
+                tags: @tags
+                body: @body
+                authorId: Meteor.userId()
+                }
+            Session.set 'editing', cloneId
         
         'click .save': (e,t)->
             val = t.find('textarea').value
@@ -55,6 +71,26 @@ if Meteor.isClient
             Docs.remove @_id
             selected.clear()
             Session.set 'editing', null
+            
+    Template.editing.onRendered ->
+        $ ->
+            $('#edit').editable 
+                inlineMode: false
+                minHeight: 100
+                toolbarFixed: false
+                #buttons: [
+                    #'bold'
+                    #'italic'
+                    #'sep'
+                    #'indent'
+                    #'outdent'
+                    #'insertOrderedList'
+                    #'insertUnorderedList'
+                    #'sep'
+                    #'createLink'
+                    #'fullscreen'
+                    #]
+           return
 
 if Meteor.isServer
     Docs.allow
@@ -80,7 +116,7 @@ if Meteor.isServer
             { $unwind: '$tags' }
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selected }
-            { $sort: count: -1 }
+            { $sort: count: -1, _id: 1 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
