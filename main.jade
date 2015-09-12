@@ -49,28 +49,30 @@ template(name='post')
             .ui.hidden.divider
             .ui.button by #{author.username} #{author.points}
             .ui.labeled.icon.button.buy(class=buyButtonClass)
-                i.dollar.icon
-                |Buy for #{price} points
+                i.arrow.up.icon
+                |1
             if buyer
                 |#{buyer}
             if canEdit
                 .ui.labeled.icon.small.button.edit
                     i.icon.pencil
                     |Edit
-                // .ui.labeled.icon.button.small.clone
-                //     i.fork.icon
-                //     |Clone
 
 
 template(name='editing')
     .ui.form
         .field
+            label Tags
             +editableList collection="posts" field="tags" liStyle="margin: 15px 5px 0 0;" class="ui header"
         .field
+            label Body
             textarea#edit.bs #{body}
-        .ui.right.labeled.input
-            input(type='number' min='1' value=price name='points' placeholder='Value')
-            .ui.basic.label points
+        
+        .field
+            .ui.right.labeled.input
+                .ui.basic.label value
+                input#value(type='number' min='1' value=value name='points' placeholder='Value')
+                .ui.basic.label points
     .ui.hidden.divider
     .bottomGroup
         .ui.labeled.icon.button.save

@@ -8,19 +8,13 @@ Meteor.methods
     buyPost: (postId)->
         post = Posts.findOne postId
         me = Meteor.userId()
-        debugger
         Meteor.users.update me, $inc: points: -post.price
         Meteor.users.update post.authorId, $inc: points: post.price
-        
-        
+      
         Posts.update postId, 
             $set: 
                 bought: true
                 buyer: Meteor.userId()
-                
-        lock from editing
-        
-
 
 if Meteor.isClient
     Session.setDefault 'editing', null
@@ -69,8 +63,8 @@ if Meteor.isClient
         postTagClass: -> if selected.array().indexOf(@valueOf()) > -1 then 'active' else ''
 
         canEdit: -> Meteor.userId() is @authorId and not @bought
-        buyButtonClass: -> 
-            if not Meteor.userId() or Meteor.user().points < @price or Meteor.userId() is @authorId then 'disabled' else ''
+        buyButtonClass: -> if @bought then 'disabled' else '' 
+            #if not Meteor.userId() and not @bought or Meteor.user().points < @price or Meteor.userId() is @authorId then 'disabled' else ''
 
     Template.post.events
         'click .edit': (e,t)-> Session.set 'editing', @_id
@@ -78,19 +72,12 @@ if Meteor.isClient
             Session.set 'editing', null
             if selected.array().indexOf(@toString()) is -1 then selected.push @toString()
             else selected.remove @toString()
-
-        #'click .clone': (e)->
-            #cloneId = Posts.insert {
-                #tags: @tags
-                #body: @body
-                #authorId: Meteor.userId()
-                #}
-            #Session.set 'editing', cloneId
         
         'click .save': (e,t)->
             body = t.find('textarea').value
             price = t.find("input[type='number']").value
-            Posts.update @_id, $set: body: body, price: price
+            priceInt = parseInt(price)
+            Posts.update @_id, $set: body: body, price: priceInt
             
             selected.clear()
             @tags.forEach (tag)-> selected.push tag
@@ -101,9 +88,7 @@ if Meteor.isClient
             selected.clear()
             Session.set 'editing', null
         
-        'click .buy': -> 
-            console.log @_id
-            Meteor.call 'buyPost', @_id
+        'click .buy': -> Meteor.call 'buyPost', @_id
             
     Template.editing.onRendered ->
         $ ->
@@ -111,23 +96,43 @@ if Meteor.isClient
                 inlineMode: false
                 minHeight: 100
                 toolbarFixed: false
-                #buttons: [
-                    #'bold'
-                    #'italic'
-                    #'sep'
-                    #'indent'
-                    #'outdent'
-                    #'insertOrderedList'
-                    #'insertUnorderedList'
-                    #'sep'
-                    #'createLink'
-                    #'fullscreen'
-                    #]
+                buttons: [
+                    'bold'
+                    'italic'
+                    'underline'
+                    'strikeThrough'
+                    'subscript'
+                    'superscript'
+                    'fontFamily'
+                    'fontSize'
+                    'color'
+                    'formatBlock'
+                    'blockStyle'
+                    'inlineStyle'
+                    'align'
+                    'insertOrderedList'
+                    'insertUnorderedList'
+                    'outdent'
+                    'indent'
+                    'selectAll'
+                    'createLink'
+                    'insertImage'
+                    'insertVideo'
+                    'table'
+                    'undo'
+                    'redo'
+                    'html'
+                    #'save'
+                    'insertHorizontalRule'
+                    #'uploadFile'
+                    'removeFormat'
+                    'fullscreen'
+                    ]
            return
 
 if Meteor.isServer
     Accounts.onCreateUser (options, user) ->
-        user.points = '100'
+        user.points = '10'
         user
         
     Posts.allow
