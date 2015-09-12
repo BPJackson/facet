@@ -1,5 +1,26 @@
 @Tags = new Meteor.Collection 'tags'
-@Docs = new Meteor.Collection 'docs'
+@Posts = new Meteor.Collection 'posts'
+
+Posts.helpers 
+    author: -> Meteor.users.findOne @authorId
+
+Meteor.methods
+    buyPost: (postId)->
+        post = Posts.findOne postId
+        me = Meteor.userId()
+        debugger
+        Meteor.users.update me, $inc: points: -post.price
+        Meteor.users.update post.authorId, $inc: points: post.price
+        
+        
+        Posts.update postId, 
+            $set: 
+                bought: true
+                buyer: Meteor.userId()
+                
+        lock from editing
+        
+
 
 if Meteor.isClient
     Session.setDefault 'editing', null
@@ -11,21 +32,22 @@ if Meteor.isClient
         dropdownClasses: 'simple'
         
     Tracker.autorun -> Meteor.subscribe 'tags', selected.array()
-    Tracker.autorun -> Meteor.subscribe 'docs', selected.array(), Session.get 'editing'
+    Tracker.autorun -> Meteor.subscribe 'posts', selected.array(), Session.get 'editing'
+    Meteor.subscribe 'people'
 
     Template.cloud.helpers
         selected: -> selected.list()
         tags: -> 
-            docCount = Docs.find().count()
-            if docCount > 0 then Tags.find {count: $lt: docCount} else Tags.find()
-        docs: -> Docs.find {}
-
-        
-    Template.doc.helpers
-        isEditing: -> Session.equals 'editing', @_id
-        postButtonClass: -> if selected.array().indexOf(@valueOf()) > -1 then 'active' else ''
-
-        canEdit: -> Meteor.userId() is @authorId
+            postCount = Posts.find().count()
+            if postCount > 0 then Tags.find {count: $lt: postCount} else Tags.find()
+        posts: -> Posts.find {}
+    
+    Template.menu.helpers
+        points: -> Meteor.user().points
+    
+    Template.cloud.events
+        'click .on': -> selected.push @name.toString()
+        'click .off': -> selected.remove @toString()
 
     Template.menu.events
         'click .home': -> 
@@ -33,44 +55,55 @@ if Meteor.isClient
             Session.set 'editing', null
         
         'click .add': ->
-            newId = Docs.insert {
+            newId = Posts.insert {
                 timestamp: Date.now()
                 authorId: Meteor.userId()
+                price: '1'
                 }
             Session.set 'editing', newId
             selected.clear()
             
-    Template.cloud.events
-        'click .select': -> selected.push @name.toString()
-        
-        'click .unselect': -> selected.remove @toString()
     
-    Template.doc.events
+    Template.post.helpers
+        isEditing: -> Session.equals 'editing', @_id
+        postTagClass: -> if selected.array().indexOf(@valueOf()) > -1 then 'active' else ''
+
+        canEdit: -> Meteor.userId() is @authorId and not @bought
+        buyButtonClass: -> 
+            if not Meteor.userId() or Meteor.user().points < @price or Meteor.userId() is @authorId then 'disabled' else ''
+
+    Template.post.events
         'click .edit': (e,t)-> Session.set 'editing', @_id
         'click .postTag': (e)->
             Session.set 'editing', null
             if selected.array().indexOf(@toString()) is -1 then selected.push @toString()
             else selected.remove @toString()
 
-        'click .clone': (e)->
-            cloneId = Docs.insert {
-                tags: @tags
-                body: @body
-                authorId: Meteor.userId()
-                }
-            Session.set 'editing', cloneId
+        #'click .clone': (e)->
+            #cloneId = Posts.insert {
+                #tags: @tags
+                #body: @body
+                #authorId: Meteor.userId()
+                #}
+            #Session.set 'editing', cloneId
         
         'click .save': (e,t)->
-            val = t.find('textarea').value
-            Docs.update @_id, $set: body: val
+            body = t.find('textarea').value
+            price = t.find("input[type='number']").value
+            Posts.update @_id, $set: body: body, price: price
+            
             selected.clear()
             @tags.forEach (tag)-> selected.push tag
             Session.set 'editing', null
 
         'click .delete': ->
-            Docs.remove @_id
+            Posts.remove @_id
             selected.clear()
             Session.set 'editing', null
+        
+        'click .buy': -> 
+            console.log @_id
+            Meteor.call 'buyPost', @_id
             
     Template.editing.onRendered ->
         $ ->
@@ -93,16 +126,23 @@ if Meteor.isClient
            return
 
 if Meteor.isServer
-    Docs.allow
-        insert: (userId, doc)-> doc.authorId is userId
-        update: (userId, doc)-> doc.authorId is userId
-        remove: (userId, doc)-> doc.authorId is userId
+    Accounts.onCreateUser (options, user) ->
+        user.points = '100'
+        user
+        
+    Posts.allow
+        insert: (userId, post)-> post.authorId is userId
+        update: (userId, post)-> post.authorId is userId
+        remove: (userId, post)-> post.authorId is userId
  
-    Meteor.publish 'docs', (selected, editing)->
-        if editing? then return Docs.find editing
+    Meteor.publish 'people', -> 
+        Meteor.users.find {}, fields: points: 1, username: 1
+ 
+    Meteor.publish 'posts', (selected, editing)->
+        if editing? then return Posts.find editing
         match = {}
         if selected.length > 0 then match.tags= $all: selected else return null
-        return Docs.find match
+        return Posts.find match
 
     Meteor.publish 'tags', (selected)->
         self = @
@@ -110,7 +150,7 @@ if Meteor.isServer
 
         if selected.length > 0 then match.tags= $all: selected
 
-        cloud = Docs.aggregate [
+        cloud = Posts.aggregate [
             { $match: match }
             { $project: tags: 1 }
             { $unwind: '$tags' }

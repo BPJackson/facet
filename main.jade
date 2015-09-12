@@ -1,4 +1,5 @@
 head
+    title Facet
     meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
     meta(name='mobile-web-app-capable', content='yes')
     meta(name='apple-mobile-web-app-capable', content='yes')
@@ -6,59 +7,70 @@ head
     meta(name='format-detection', content='telephone=no')
 body
     +menu
-    .ui.main
+    .layout
         +cloud
 
 template(name='menu')
-    .ui.fixed.inverted.menu
+    .ui.borderless.inverted.attached.menu
         a.header.item.home Facet
         +loginButtons
-        if currentUser
-            unless $.Session.get 'editing'
-                a.icon.item.add 
-                    i.plus.icon
+        .item 
+            if currentUser
+                |#{points} points
+        .right.menu
+            if currentUser
+                unless $.Session.get 'editing'
+                    a.header.item.add 
+                        i.plus.icon
 
 template(name='cloud')
     unless $.Session.get 'editing'
         .ui.attached.center.aligned.segment.tagCloud
             each selected
-                .ui.compact.right.labeled.icon.active.button.unselect
+                .ui.compact.right.labeled.icon.active.button.off
                     i.minus.icon
                     | #{this}
             
             each tags
-                .ui.compact.button.select
+                .ui.compact.button.on
                     |#{name}
                     // small #{count}
-    each docs
-        +doc
-template(name='doc')
-    .ui.segment.docContent
+    each posts
+        +post
+template(name='post')
+    .ui.segment.postContent.container
         if isEditing
             +editing
         else
-            .ui.text.container
-                each tags
-                    .ui.small.button.postTag(class=postButtonClass) #{this}
-                .ui.hidden.divider
-                .froala-view
-                    |!{body}
-                .ui.hidden.divider
-                if canEdit
-                    .ui.labeled.icon.button.edit
-                        i.icon.pencil
-                        |Edit
-                .ui.labeled.icon.button.clone
-                    i.fork.icon
-                    |Clone
+            each tags
+                .ui.small.compact.button.postTag(class=postTagClass) #{this}
+            .ui.hidden.divider
+            .froala-view !{body}
+            .ui.hidden.divider
+            .ui.button by #{author.username} #{author.points}
+            .ui.labeled.icon.button.buy(class=buyButtonClass)
+                i.dollar.icon
+                |Buy for #{price} points
+            if buyer
+                |#{buyer}
+            if canEdit
+                .ui.labeled.icon.small.button.edit
+                    i.icon.pencil
+                    |Edit
+                // .ui.labeled.icon.button.small.clone
+                //     i.fork.icon
+                //     |Clone
 
 
 template(name='editing')
     .ui.form
         .field
-            +editableList collection="docs" field="tags" liStyle="margin: 15px 5px 0 0;" class="ui header"
+            +editableList collection="posts" field="tags" liStyle="margin: 15px 5px 0 0;" class="ui header"
         .field
             textarea#edit.bs #{body}
+        .ui.right.labeled.input
+            input(type='number' min='1' value=price name='points' placeholder='Value')
+            .ui.basic.label points
     .ui.hidden.divider
     .bottomGroup
         .ui.labeled.icon.button.save
