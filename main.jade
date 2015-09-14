@@ -12,30 +12,32 @@ body
 
 template(name='menu')
     .ui.borderless.inverted.attached.menu
-        a.item.home Facet
-        .item 
+        a.item.home home
+        .item
             +loginButtons
         if currentUser
-            .item 
-                |#{rating}
+            .item my points #{user.points}
+            .item my rating #{user.rating}
             unless $.Session.get 'editing'
-                a.header.item.add 
-                    i.plus.icon
+                a.header.item.add add
+
 
 template(name='cloud')
     unless $.Session.get 'editing'
         .ui.attached.center.aligned.segment.tagCloud
-            each selected
+            each selectedtags
                 .ui.compact.right.labeled.icon.active.button.toggleOff
                     i.minus.icon
                     | #{this}
-            
+
             each tags
                 .ui.compact.button.toggleOn
                     |#{name}
                     small #{count}
     each posts
         +post
+
+
 template(name='post')
     .ui.segment.postContent.container
         if editing
@@ -43,38 +45,31 @@ template(name='post')
         else
             each tags
                 .ui.small.compact.button.titleTag(class=titleTagClass) #{this}
-            
+
             .ui.hidden.fitted.divider
             .froala-view !{body}
+
             .ui.segment
-                .ui.button by 
-                    |#{author}
-                    small #{authorob.rating}
+                .ui.button by
+                    |#{author.username}
+                    small #{author.rating}
             .ui.segment
-                if joinable
-                    .ui.labeled.icon.large.green.button.join
-                        i.checkmark.icon
-                        |Join
-                if unjoinable
-                    .ui.labeled.icon.large.yellow.button.unjoin
-                        i.check.square.icon
-                        |Leave
-                |Joined: 
-                each joined
-                    .ui.label #{this}
+                .ui.green.button.bid(class=bidclass) Bid +1
+
+                |high bid: #{bid}
+
+                .ui.label by #{bidder}
+
+                if bid
+                    if acceptable
+                        .ui.large.green.button.accept Accept
+
             .ui.segment
-                if likable
-                    .ui.labeled.icon.large.green.button.like
-                        i.thumbs.up.outline.icon
-                        |Like
-                if unlikable
-                    .ui.labeled.icon.large.red.button.unlike
-                        i.thumbs.up.icon
-                        |Unlike
-                |Liked: 
-                each liked
-                    .ui.label #{this}
-            if canEdit
+                if recommendable
+                    .ui.slider.checkbox
+                        input(type="checkbox", name="recommend")
+                        label Recommend
+            if isAuthor
                 .ui.small.button.edit edit
 
 
