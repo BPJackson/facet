@@ -12,54 +12,73 @@ body
 
 template(name='menu')
     .ui.borderless.inverted.attached.menu
-        a.header.item.home Facet
-        +loginButtons
+        a.item.home Facet
         .item 
-            if currentUser
-                |#{points} points
-        .right.menu
-            if currentUser
-                unless $.Session.get 'editing'
-                    a.header.item.add 
-                        i.plus.icon
+            +loginButtons
+        if currentUser
+            .item 
+                |#{rating}
+            unless $.Session.get 'editing'
+                a.header.item.add 
+                    i.plus.icon
 
 template(name='cloud')
     unless $.Session.get 'editing'
         .ui.attached.center.aligned.segment.tagCloud
             each selected
-                .ui.compact.right.labeled.icon.active.button.off
+                .ui.compact.right.labeled.icon.active.button.toggleOff
                     i.minus.icon
                     | #{this}
             
             each tags
-                .ui.compact.button.on
+                .ui.compact.button.toggleOn
                     |#{name}
-                    // small #{count}
+                    small #{count}
     each posts
         +post
 template(name='post')
     .ui.segment.postContent.container
-        if isEditing
-            +editing
+        if editing
+            +edit
         else
             each tags
-                .ui.small.compact.button.postTag(class=postTagClass) #{this}
-            .ui.hidden.divider
+                .ui.small.compact.button.titleTag(class=titleTagClass) #{this}
+            
+            .ui.hidden.fitted.divider
             .froala-view !{body}
-            .ui.hidden.divider
-            .ui.button by #{author.username} #{author.points}
-            .ui.labeled.icon.button.buy(class=buyButtonClass)
-                i.arrow.up.icon
-                |1
-            if buyer
-                |#{buyer}
+            .ui.segment
+                .ui.button by 
+                    |#{author}
+                    small #{authorob.rating}
+            .ui.segment
+                if joinable
+                    .ui.labeled.icon.large.green.button.join
+                        i.checkmark.icon
+                        |Join
+                if unjoinable
+                    .ui.labeled.icon.large.yellow.button.unjoin
+                        i.check.square.icon
+                        |Leave
+                |Joined: 
+                each joined
+                    .ui.label #{this}
+            .ui.segment
+                if likable
+                    .ui.labeled.icon.large.green.button.like
+                        i.thumbs.up.outline.icon
+                        |Like
+                if unlikable
+                    .ui.labeled.icon.large.red.button.unlike
+                        i.thumbs.up.icon
+                        |Unlike
+                |Liked: 
+                each liked
+                    .ui.label #{this}
             if canEdit
-                .ui.labeled.icon.small.button.edit
-                    i.icon.pencil
-                    |Edit
+                .ui.small.button.edit edit
 
 
-template(name='editing')
+template(name='edit')
     .ui.form
         .field
             label Tags
@@ -67,17 +86,9 @@ template(name='editing')
         .field
             label Body
             textarea#edit.bs #{body}
-        
-        .field
-            .ui.right.labeled.input
-                .ui.basic.label value
-                input#value(type='number' min='1' value=value name='points' placeholder='Value')
-                .ui.basic.label points
     .ui.hidden.divider
     .bottomGroup
-        .ui.labeled.icon.button.save
-            i.checkmark.icon
+        .ui.button.green.save
             |Save
-        .ui.right.floated.labeled.icon.button.delete
-            i.remove.icon
+        .ui.right.floated.small.red.basic.button.delete
             |Delete

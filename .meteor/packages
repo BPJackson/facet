@@ -17,6 +17,6 @@ mquandalle:stylus
 raix:handlebar-helpers
 fastclick
 babrahams:editable-list
-iandouglas:accounts-ui-semantic-ui
 froala:editor
 dburles:collection-helpers
+accounts-ui
