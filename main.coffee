@@ -3,96 +3,83 @@
 
 Posts.helpers
     author: -> Meteor.users.findOne @authorId
+    bidder: -> Meteor.users.findOne @bidderId
 
 Meteor.methods
     bid: (postId)->
         post = Posts.findOne postId
-        me = Meteor.userId()
 
-        Meteor.users.update post.bidder, $inc: points: post.bid
+        Meteor.users.update post.bidderId, $inc: points: post.bid
+        Meteor.users.update Meteor.userId(), $inc: points: -(post.bid+1)
 
-        Meteor.users.update me, $inc: points: -post.bid+1
-
-        Posts.update postId,
-            $set: bidder: me
-            $inc: bid: 1
+        Posts.update postId, $set: {bidderId: Meteor.userId()}, $inc: bid: 1
 
     accept: (postId)->
         post = Posts.findOne postId
-        me = Meteor.userId()
-
         Posts.update postId, $set: accepted: true
-
-        Meteor.users.update me, $inc: points: post.bid
+        Meteor.users.update Meteor.userId(), $inc: points: post.bid
 
     recommend: (postId)->
-        post = Posts.findOne postId
-        me = Meteor.userId()
-
-        #set post recommend : true
         Posts.update postId, $set: recommend: true
+        Meteor.users.update Meteor.userId(), $inc: rating: 1
 
-        #inc authors rating
-        Meteor.users.update me, $inc: rating: 1
-
-    delete: (postId)-> Post.remove postId
+    delete: (postId)-> Posts.remove postId
 
 if Meteor.isClient
     Session.setDefault 'editing', null
-
     selectedtags = new ReactiveArray []
-
     Accounts.ui.config passwordSignupFields: 'USERNAME_AND_OPTIONAL_EMAIL'
 
     Tracker.autorun -> Meteor.subscribe 'tags', selectedtags.array()
-
     Tracker.autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get 'editing'
-
     Meteor.subscribe 'people'
 
     Template.cloud.helpers
         selectedtags: -> selectedtags.list()
-
         tags: -> if Posts.find().count() then Tags.find {count: $lt: Posts.find().count()} else Tags.find()
-
         posts: -> Posts.find {}
 
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
-
         isAuthor: -> Meteor.userId() is @authorId
 
-        titleTagClass: -> if @valueOf() in selectedtags.array() then 'active' else ''
+        canEdit: -> Meteor.userId() is @authorId and not @bid
 
+        bidamount: -> if Meteor.userId() is @bidderId then 1 else @bid+1
+        canBid: -> Meteor.userId() and Meteor.userId() isnt @authorId
         bidclass: ->
-            if Meteor.userId()
-                if Meteor.userId() is @bidder
-                    if Meteor.user().points then ''
-                else if Meteor.user().points > @bid
-            else 'disabled'
+            my = Meteor.user()
+            if my?
+                if my._id is @authorId then 'disabled tiny'
+                else if my._id is @bidderId and my.points > 0 then 'blue'
+                else if my.points > @bid then 'blue'
+            else 'disabled blue'
 
-        acceptable: -> @bid and Meteor.userId() is @authorId and not @accepted
-
-        recommendable: -> Meteor.userId() is @bidder and @accepted
+        canAccept: -> Meteor.userId() is @authorId and not @accepted
+        canRecommend: -> @accepted and Meteor.userId() is @bidderId
 
     Template.menu.helpers
         user: -> Meteor.user()
 
-    Template.cloud.events
-        'click .toggleOn': -> selectedtags.push @name.toString()
+    Template.edit.helpers
+        saveclass: ->
+            if not @tags? then 'disabled' else ''
 
-        'click .toggleOff': -> selectedtags.remove @toString()
+    Template.cloud.events
+        'click #toggleOn': -> selectedtags.push @name.toString()
+
+        'click #toggleOff': -> selectedtags.remove @toString()
 
     Template.menu.events
-        'click .home': ->
+        'click #home': ->
             selectedtags.clear()
             Session.set 'editing', null
 
-        'click .add': ->
+        'click #add': ->
             newId = Posts.insert {
                 authorId: Meteor.userId()
                 bid: 0
-                bidder: ''
+                bidderId: ''
                 accepted: false
                 }
 
@@ -100,13 +87,9 @@ if Meteor.isClient
             selectedtags.clear()
 
     Template.post.events
-        'click .edit': (e,t)-> Session.set 'editing', @_id
-        'click .titleTag': (e)->
-            Session.set 'editing', null
-            if @toString() not in selectedtags.array() then selectedtags.push @toString()
-            else selectedtags.remove @toString()
+        'click #edit': (e,t)-> Session.set 'editing', @_id
 
-        'click .save': (e,t)->
+        'click #save': (e,t)->
             body = t.find('textarea').value
             Posts.update @_id, $set: body: body
 
@@ -114,19 +97,20 @@ if Meteor.isClient
             @tags.forEach (tag)-> selectedtags.push tag
             Session.set 'editing', null
 
-        'click .delete': ->
+        'click #delete': ->
             Meteor.call 'delete', @_id
             selectedtags.clear()
             Session.set 'editing', null
 
-        'click .recommend': -> Meteor.call 'recommend', @_id
+        'click #recommend': -> Meteor.call 'recommend', @_id
 
-        'click .bid': -> Meteor.call 'bid', @_id
+        'click #bid': -> Meteor.call 'bid', @_id
 
+        'click #accept': -> Meteor.call 'accept', @_id
 
     Template.edit.onRendered ->
         $ ->
-            $('#edit').editable
+            $('#editarea').editable
                 inlineMode: false
                 minHeight: 100
                 toolbarFixed: false

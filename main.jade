@@ -11,79 +11,78 @@ body
         +cloud
 
 template(name='menu')
-    .ui.borderless.inverted.attached.menu
-        a.item.home home
+    .ui.inverted.attached.menu
+        a#home.item Home
         .item
             +loginButtons
         if currentUser
-            .item my points #{user.points}
-            .item my rating #{user.rating}
+            .item Points #{user.points}
+            .item Rating #{user.rating}
+            a.item Posts
+            a.item Bids
+            a.item Won
+
             unless $.Session.get 'editing'
-                a.header.item.add add
+                a#add.header.item Add Post
 
 
 template(name='cloud')
     unless $.Session.get 'editing'
-        .ui.attached.center.aligned.segment.tagCloud
-            each selectedtags
-                .ui.compact.right.labeled.icon.active.button.toggleOff
-                    i.minus.icon
-                    | #{this}
-
-            each tags
-                .ui.compact.button.toggleOn
-                    |#{name}
-                    small #{count}
-    each posts
-        +post
+        each selectedtags
+            #toggleOff.ui.right.labeled.icon.active.button
+                i.minus.icon
+                | #{this}
+        each tags
+            #toggleOn.ui.button
+                |#{name}
+                small #{count}
+    .ui.cards
+        each posts
+            .ui.card
+                +post
 
 
 template(name='post')
-    .ui.segment.postContent.container
         if editing
-            +edit
+                +edit
         else
-            each tags
-                .ui.small.compact.button.titleTag(class=titleTagClass) #{this}
-
-            .ui.hidden.fitted.divider
-            .froala-view !{body}
-
-            .ui.segment
-                .ui.button by
-                    |#{author.username}
-                    small #{author.rating}
-            .ui.segment
-                .ui.green.button.bid(class=bidclass) Bid +1
-
-                |high bid: #{bid}
-
-                .ui.label by #{bidder}
-
-                if bid
-                    if acceptable
-                        .ui.large.green.button.accept Accept
-
-            .ui.segment
-                if recommendable
-                    .ui.slider.checkbox
-                        input(type="checkbox", name="recommend")
-                        label Recommend
-            if isAuthor
-                .ui.small.button.edit edit
-
+            .content
+                if canEdit
+                    a#edit.ui.right.floated
+                        i.pencil.icon
+                .header
+                    .ui.large.horizontal.list
+                        each tags
+                            .ui.item #{this}
+                .meta
+                    |by #{author.username} #{author.rating}
+                .description.froala-view !{body}
+                .extra
+                    if bidder
+                        |High Bid: #{bid} by #{bidder.username} #{bidder.rating}
+            if canBid
+                #bid.ui.basic.blue.bottom.attached.button(class=bidclass)
+                    i.legal.icon
+                    |Bid #{bidamount}
+            if canAccept
+                #accept.ui.basic.bottom.attached.green.button
+                    i.checkmark.icon
+                    |Accept #{bid}
+            if canRecommend
+                .ui.slider.checkbox
+                    input(type="checkbox", name="recommend")
+                    label Recommend
 
 template(name='edit')
-    .ui.form
-        .field
-            label Tags
-            +editableList collection="posts" field="tags" liStyle="margin: 15px 5px 0 0;" class="ui header"
-        .field
-            label Body
-            textarea#edit.bs #{body}
-    .ui.hidden.divider
-    .bottomGroup
-        .ui.button.green.save
-            |Save
-        .ui.right.floated.small.red.basic.button.delete
-            |Delete
+    .content
+        .ui.form
+            .field
+                label Tags
+                +editableList collection="posts" field="tags" liStyle="margin: 15px 5px 0 0;" class="ui header"
+            .field
+                label Body
+                textarea#editarea.bs #{body}
+        .ui.hidden.divider
+        .bottomGroup
+            #save.ui.basic.green.button(class=saveclass) Save
+            #delete.ui.right.floated.small.red.basic.button Delete
