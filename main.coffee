@@ -30,8 +30,14 @@ Meteor.methods
         Meteor.users.update Meteor.userId(), $inc: points: post.bid
 
     recommend: (postId)->
-        Posts.update postId, $set: recommend: true
-        Meteor.users.update Meteor.userId(), $inc: rating: 1
+        post = Posts.findOne postId
+        Posts.update postId, $set: recommended: true
+        Meteor.users.update post.authorId, $inc: rating: 1
+
+    unrecommend: (postId)->
+        post = Posts.findOne postId
+        Posts.update postId, $set: recommended: false
+        Meteor.users.update post.authorId, $inc: rating: -1
 
     delete: (postId)-> Posts.remove postId
 
@@ -69,7 +75,7 @@ if Meteor.isClient
         editing: -> Session.equals 'editing', @_id
         isAuthor: -> Meteor.userId() is @authorId
 
-        canEdit: -> Meteor.userId() is @authorId and not @bid
+        canEdit: -> Meteor.userId() is @authorId and not @accepted and @bid is 0
 
         bidamount: -> if Meteor.userId() is @bidderId then 1 else @bid+1
         canBid: -> Meteor.userId() and Meteor.userId() isnt @authorId and not @accepted
@@ -82,7 +88,9 @@ if Meteor.isClient
             else 'disabled blue'
 
         canAccept: -> Meteor.userId() is @authorId and not @accepted and @bid > 0
-        canRecommend: -> @accepted and Meteor.userId() is @bidderId
+
+        canRecommend: -> @accepted and not @recommended and Meteor.userId() is @bidderId
+        canUnrecommend: -> @accepted and @recommended and Meteor.userId() is @bidderId
 
     Template.edit.helpers
         saveclass: -> if not @tags? then 'disabled' else ''
@@ -95,6 +103,8 @@ if Meteor.isClient
             FlowRouter.setQueryParams tags: null
 
         'click #add': ->
+            Session.set 'view', null
+            selectedtags.clear()
             newId = Posts.insert {
                 authorId: Meteor.userId()
                 bid: 0
@@ -103,7 +113,6 @@ if Meteor.isClient
                 }
 
             Session.set 'editing', newId
-            selectedtags.clear()
 
         'click #posts': -> Session.set 'view','posts'
         'click #bids': -> Session.set 'view','bids'
@@ -138,6 +147,9 @@ if Meteor.isClient
         'click #bid': -> Meteor.call 'bid', @_id
 
         'click #accept': -> Meteor.call 'accept', @_id
+
+        'click #recommend': -> Meteor.call 'recommend', @_id
+        'click #unrecommend': -> Meteor.call 'unrecommend', @_id
 
     Template.edit.onRendered ->
         $ ->

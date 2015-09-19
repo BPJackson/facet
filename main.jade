@@ -31,31 +31,35 @@ template(name='cloud')
                     #toggleOff.ui.active.button
                         | #{this}
                 each tags
-                    #toggleOn.ui.button
+                    #toggleOn.ui.compact.button
                         |#{name}
                         small #{count}
-        .ui.cards
-            if posts
-                each posts
-                    .ui.fluid.card
-                        +post
-            else
-                h4 No posts to show
+    .ui.cards
+        if posts
+            each posts
+                .ui.fluid.card
+                    +post
+        else
+            h4 No posts to show
 
 template(name='post')
     if editing
         +edit
     else
         .content
-            if canEdit
-                a#edit.ui.right.corner.blue.label
-                    i.pencil.inverted.icon
-            if accepted
-                .ui.green.right.ribbon.label #{bid} Accepted
             .header
                 .ui.huge.horizontal.list
                     each tags
                         .ui.item #{this}
+            if canEdit
+                a#edit.ui.right.corner.blue.label
+                    i.pencil.inverted.icon
+            if accepted
+                .ui.green.top.right.attached.label #{bid} Accepted
+            if recommended
+                .ui.blue.bottom.right.attached.label
+                    i.thumbs.up.outline.icon
+                    |Recommended
             .meta
                 |by #{author.username} #{author.rating}
             .description.froala-view !{body}
@@ -76,9 +80,16 @@ template(name='post')
                         i.checkmark.icon
                         |Accept #{bid}
                 if canRecommend
-                    .ui.slider.checkbox
-                        input(type="checkbox", name="recommend")
-                        label Recommend
+                    a#recommend
+                        i.thumbs.up.icon
+                        |Recommend
+                if canUnrecommend
+                    a#unrecommend
+                        i.thumbs.down.icon
+                        |Unrecommend
+                    // #recommend.ui.slider.checkbox
+                        // input(type="checkbox", name="recommend")
+                        // label Recommend
 
 template(name='edit')
     .content
