@@ -19,4 +19,6 @@ fastclick
 babrahams:editable-list
 froala:editor
 dburles:collection-helpers
-accounts-ui
+iandouglas:accounts-ui-semantic-ui
+kadira:flow-router
+kadira:blaze-layout

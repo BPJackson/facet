@@ -5,73 +5,80 @@ head
     meta(name='apple-mobile-web-app-capable', content='yes')
     meta(name='apple-mobile-web-app-status-bar-style', content='black')
     meta(name='format-detection', content='telephone=no')
-body
-    +menu
-    .layout
-        +cloud
 
-template(name='menu')
-    .ui.inverted.attached.menu
-        a#home.item Home
-        .item
-            +loginButtons
-        if currentUser
-            .item Points #{user.points}
-            .item Rating #{user.rating}
-            a.item Posts
-            a.item Bids
-            a.item Won
-
-            unless $.Session.get 'editing'
-                a#add.header.item Add Post
-
+template(name='layout')
+    .layout.ui.container
+        +Template.dynamic template=content
 
 template(name='cloud')
+    .ui.inverted.borderless.fixed.menu
+        a#home.icon.item
+            i.home.icon
+        +loginButtons
+        if currentUser
+            .item #{user.rating}
+            .item #{user.points} Points
+            a#posts.item Posts
+            a#bids.item Bids
+            a#won.item Won
+            .right.menu
+                unless $.Session.get 'editing'
+                    a#add.header.item Add
     unless $.Session.get 'editing'
-        each selectedtags
-            #toggleOff.ui.right.labeled.icon.active.button
-                i.minus.icon
-                | #{this}
-        each tags
-            #toggleOn.ui.button
-                |#{name}
-                small #{count}
-    .ui.cards
-        each posts
-            .ui.card
-                +post
-
+        unless $.Session.get 'view'
+            .ui.segment
+                each selectedtags
+                    #toggleOff.ui.active.button
+                        | #{this}
+                each tags
+                    #toggleOn.ui.button
+                        |#{name}
+                        small #{count}
+        .ui.cards
+            if posts
+                each posts
+                    .ui.fluid.card
+                        +post
+            else
+                h4 No posts to show
 
 template(name='post')
-        if editing
-                +edit
-        else
-            .content
-                if canEdit
-                    a#edit.ui.right.floated
-                        i.pencil.icon
-                .header
-                    .ui.large.horizontal.list
-                        each tags
-                            .ui.item #{this}
-                .meta
-                    |by #{author.username} #{author.rating}
-                .description.froala-view !{body}
-                .extra
-                    if bidder
-                        |High Bid: #{bid} by #{bidder.username} #{bidder.rating}
-            if canBid
-                #bid.ui.basic.blue.bottom.attached.button(class=bidclass)
-                    i.legal.icon
-                    |Bid #{bidamount}
-            if canAccept
-                #accept.ui.basic.bottom.attached.green.button
-                    i.checkmark.icon
-                    |Accept #{bid}
-            if canRecommend
-                .ui.slider.checkbox
-                    input(type="checkbox", name="recommend")
-                    label Recommend
+    if editing
+        +edit
+    else
+        .content
+            if canEdit
+                a#edit.ui.right.corner.blue.label
+                    i.pencil.inverted.icon
+            if accepted
+                .ui.green.right.ribbon.label #{bid} Accepted
+            .header
+                .ui.huge.horizontal.list
+                    each tags
+                        .ui.item #{this}
+            .meta
+                |by #{author.username} #{author.rating}
+            .description.froala-view !{body}
+            .ui.divider
+            .extra.content
+                if bidder
+                    .ui.horizontal.mini.statistic
+                        .label high bid #{bid}
+                    .ui.mini.horizontal.statistic
+                        .label by #{bidder.username} #{bidder.rating}
+            .extra.content
+                if canBid
+                    a#bid(class=bidclass)
+                        i.legal.icon
+                        |Bid #{bidamount}
+                if canAccept
+                    a#accept
+                        i.checkmark.icon
+                        |Accept #{bid}
+                if canRecommend
+                    .ui.slider.checkbox
+                        input(type="checkbox", name="recommend")
+                        label Recommend
 
 template(name='edit')
     .content
