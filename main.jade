@@ -10,17 +10,17 @@ template(name='layout')
     .layout.ui.container
         +Template.dynamic template=content
 
-template(name='cloud')
-    .ui.inverted.borderless.fixed.menu
+template(name='home')
+    .ui.inverted.fixed.menu
         a#home.icon.item
             i.home.icon
         +loginButtons
         if currentUser
-            .item #{user.rating}
-            .item #{user.points} Points
-            a#posts.item Posts
-            a#bids.item Bids
-            a#won.item Won
+            // .item #{user.rating}
+            // .item #{user.points} pts
+            a#posts.item Mine
+            // a#bids.item My Bids
+            // a#won.item Won
             .right.menu
                 unless $.Session.get 'editing'
                     a#add.header.item Add
@@ -28,10 +28,10 @@ template(name='cloud')
         unless $.Session.get 'view'
             .ui.segment
                 each selectedtags
-                    #toggleOff.ui.active.button
+                    #toggleOff.ui.large.basic.grey.compact.button
                         | #{this}
                 each tags
-                    #toggleOn.ui.compact.button
+                    #toggleOn.ui.compact.basic.button
                         |#{name}
                         small #{count}
     .ui.cards
@@ -47,49 +47,39 @@ template(name='post')
         +edit
     else
         .content
+            unless isAuthor
+                .right.floated by #{author.username}  #{author.rating} 
             .header
-                .ui.huge.horizontal.list
-                    each tags
-                        .ui.item #{this}
+                each tags
+                    .ui.basic.large.label.titletag #{this}
             if canEdit
-                a#edit.ui.right.corner.blue.label
-                    i.pencil.inverted.icon
-            if accepted
-                .ui.green.top.right.attached.label #{bid} Accepted
-            if recommended
-                .ui.blue.bottom.right.attached.label
-                    i.thumbs.up.outline.icon
-                    |Recommended
-            .meta
-                |by #{author.username} #{author.rating}
+                a#edit.ui.right.blue.corner.label
+                    i.pencil.inverted.link.icon
+        .content
             .description.froala-view !{body}
-            .ui.divider
-            .extra.content
-                if bidder
-                    .ui.horizontal.mini.statistic
-                        .label high bid #{bid}
-                    .ui.mini.horizontal.statistic
-                        .label by #{bidder.username} #{bidder.rating}
-            .extra.content
-                if canBid
-                    a#bid(class=bidclass)
-                        i.legal.icon
-                        |Bid #{bidamount}
-                if canAccept
-                    a#accept
-                        i.checkmark.icon
-                        |Accept #{bid}
-                if canRecommend
-                    a#recommend
-                        i.thumbs.up.icon
-                        |Recommend
-                if canUnrecommend
-                    a#unrecommend
-                        i.thumbs.down.icon
-                        |Unrecommend
-                    // #recommend.ui.slider.checkbox
-                        // input(type="checkbox", name="recommend")
-                        // label Recommend
+        // .content
+        //     unless accepted
+        //         if canBid
+        //             #bid.ui.blue.button(class=bidclass) Bid #{bidinc}
+        //         if canAccept
+        //             #accept.ui.green.button Accept #{bid}
+        //         .ui.large.basic.label
+        //             if bidder
+        //                 |Highbid #{bid} by #{bidder.username} #{bidder.rating}
+        //             else
+        //                 |No bids
+        //     if canRefund
+        //         a#refund Refund and Cancel
+        //     if canRecommend
+        //         a#recommend Recommend
+        //     if canUnrecommend
+        //         a#unrecommend Unrecommend
+        // .content
+        //     if accepted
+        //         .ui.green.bottom.left.attached.label Accepted #{bid} from #{bidder.username} #{bidder.rating}
+        //     if recommended
+        //         .ui.blue.bottom.right.attached.label Recommended
+
 
 template(name='edit')
     .content

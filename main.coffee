@@ -8,7 +8,7 @@ FlowRouter.route '/',
         #console.log selectedtags
 
         #selectedtags.clear()
-        BlazeLayout.render("layout", {content: "cloud"});
+        BlazeLayout.render("layout", {content: "home"});
 
 
 Posts.helpers
@@ -28,6 +28,15 @@ Meteor.methods
         post = Posts.findOne postId
         Posts.update postId, $set: accepted: true
         Meteor.users.update Meteor.userId(), $inc: points: post.bid
+    
+    refund: (postId)->
+        post = Posts.findOne postId
+        Posts.update postId, $set: accepted: false, bid: 0, bidderId: null, recommended: null
+        if post.recommended
+            Meteor.users.update Meteor.userId(), $inc: points: -post.bid, rating: -1
+        else
+            Meteor.users.update Meteor.userId(), $inc: points: -post.bid
+        Meteor.users.update post.bidderId, $inc: points: post.bid
 
     recommend: (postId)->
         post = Posts.findOne postId
@@ -48,15 +57,13 @@ if Meteor.isClient
         passwordSignupFields: 'USERNAME_AND_OPTIONAL_EMAIL'
         dropdownClasses: 'simple'
 
-    Template.cloud.onCreated ->
+    Template.home.onCreated ->
         self = @
         Session.setDefault 'editing', null
         Session.setDefault 'view', null
 
         #console.log FlowRouter.getQueryParam 'tags'
-#
         #paramArray = FlowRouter.getQueryParam('tags')?.split ','
-#
         #console.log paramArray
 
         #self.autorun -> Meteor.subscribe 'tags', FlowRouter.getQueryParam('tags')?.split(',')
@@ -65,7 +72,7 @@ if Meteor.isClient
         self.subscribe 'people'
 
 
-    Template.cloud.helpers
+    Template.home.helpers
         selectedtags: -> selectedtags.list()
         tags: -> if Posts.find().count() then Tags.find {count: $lt: Posts.find().count()} else Tags.find()
         posts: -> Posts.find {}
@@ -77,17 +84,19 @@ if Meteor.isClient
 
         canEdit: -> Meteor.userId() is @authorId and not @accepted and @bid is 0
 
-        bidamount: -> if Meteor.userId() is @bidderId then 1 else @bid+1
+        bidinc: -> @bid + 1
+
         canBid: -> Meteor.userId() and Meteor.userId() isnt @authorId and not @accepted
+
         bidclass: ->
             my = Meteor.user()
             if my?
-                if my._id is @authorId then 'disabled tiny'
-                else if my._id is @bidderId and my.points > 0 then 'blue'
-                else if my.points > @bid then 'blue'
-            else 'disabled blue'
+                if my._id is @bidderId and my.points > 0 then ''
+                else if my.points > @bid then ''
+            else 'disabled'
 
         canAccept: -> Meteor.userId() is @authorId and not @accepted and @bid > 0
+        canRefund: -> Meteor.userId() is @authorId and @accepted and @bid > 0
 
         canRecommend: -> @accepted and not @recommended and Meteor.userId() is @bidderId
         canUnrecommend: -> @accepted and @recommended and Meteor.userId() is @bidderId
@@ -95,7 +104,7 @@ if Meteor.isClient
     Template.edit.helpers
         saveclass: -> if not @tags? then 'disabled' else ''
 
-    Template.cloud.events
+    Template.home.events
         'click #home': ->
             selectedtags.clear()
             Session.set 'editing', null
@@ -115,13 +124,17 @@ if Meteor.isClient
             Session.set 'editing', newId
 
         'click #posts': -> Session.set 'view','posts'
+        
         'click #bids': -> Session.set 'view','bids'
+        
         'click #won': -> Session.set 'view','won'
+        
         'click #toggleOn': ->
             selectedtags.push @name.toString()
             #FlowRouter.setQueryParams tags: @selectedtags.toString()
             FlowRouter.setQueryParams tags: selectedtags.join([separator = ','])
             #FlowRouter.setQueryParams tag: @name.toString()
+        
         'click #toggleOff': ->
             selectedtags.remove @toString()
             FlowRouter.setQueryParams tags: selectedtags.join([separator = ','])
@@ -148,7 +161,10 @@ if Meteor.isClient
 
         'click #accept': -> Meteor.call 'accept', @_id
 
+        'click #refund': -> Meteor.call 'refund', @_id
+
         'click #recommend': -> Meteor.call 'recommend', @_id
+        
         'click #unrecommend': -> Meteor.call 'unrecommend', @_id
 
     Template.edit.onRendered ->
