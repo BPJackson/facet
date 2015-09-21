@@ -8,7 +8,7 @@ FlowRouter.route '/',
         #console.log selectedtags
 
         #selectedtags.clear()
-        BlazeLayout.render("layout", {content: "home"});
+        BlazeLayout.render("layout", {content: "home", nav: "nav"});
 
 
 Posts.helpers
@@ -20,9 +20,39 @@ Meteor.methods
 if Meteor.isClient
     selectedtags = new ReactiveArray []
 
-    Accounts.ui.config
-        passwordSignupFields: 'USERNAME_AND_OPTIONAL_EMAIL'
-        dropdownClasses: 'simple'
+
+    AccountsTemplates.configure
+        defaultLayout: 'layout'
+        defaultLayoutRegions: 
+            nav: 'nav'
+        defaultContentRegion: 'content'
+
+    AccountsTemplates.configureRoute 'signIn'
+
+
+    pwd = AccountsTemplates.removeField('password')
+    AccountsTemplates.removeField 'email'
+    AccountsTemplates.addFields [
+        {
+            _id: 'username'
+            type: 'text'
+            displayName: 'username'
+            required: true
+            minLength: 3
+        }
+        #{
+            #_id: 'email'
+            #type: 'email'
+            #required: true
+            #displayName: 'email'
+            #re: /.+@(.+){2,}\.(.+){2,}/
+            #errStr: 'Invalid email'
+        #}
+        pwd
+    ]
+
+
+
 
     Template.home.onCreated ->
         self = @
@@ -34,8 +64,8 @@ if Meteor.isClient
         #console.log paramArray
 
         #self.autorun -> Meteor.subscribe 'tags', FlowRouter.getQueryParam('tags')?.split(',')
-        self.autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'view', Session.get 'authorFilter'
-        self.autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing'), Session.get 'view', Session.get 'authorFilter'
+        self.autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'authorFilter'
+        self.autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('authorFilter'), Session.get('editing')
         self.subscribe 'people'
 
 
@@ -44,12 +74,14 @@ if Meteor.isClient
         tags: -> if Posts.find().count() then Tags.find {count: $lt: Posts.find().count()} else Tags.find()
         posts: -> Posts.find {}
         user: -> Meteor.user()
+        homeclass: -> if selectedtags.array().length is 0 and not Session.get('authorFilter') and not Session.get('editing') then 'active' else ''
+        mineclass: -> if Session.equals 'authorFilter', Meteor.userId() then 'active' else ''
         toggleonclass: -> 
             switch
                 when @count > 50 then 'huge'
                 when @count > 40 then 'big'
-                when @count > 30 then 'large'
-                when @count > 20 then 'medium'
+                when @count > 20 then 'large'
+                when @count > 10 then 'medium'
                 #when @count > 10 then 'small'
                 #when @count > 3 then 'tiny'
                 else 'small'
@@ -60,7 +92,7 @@ if Meteor.isClient
         isAuthor: -> Meteor.userId() is @authorId
         postTagClass: -> if @valueOf() in selectedtags.array() then 'grey' else 'small'
 
-    Template.home.events
+    Template.nav.events
         'click #home': ->
             selectedtags.clear()
             Session.set 'editing', null
@@ -79,8 +111,10 @@ if Meteor.isClient
 
             Session.set 'editing', newId
 
-        'click #posts': -> Session.set 'view','posts'
+        'click #posts': -> Session.set 'authorFilter',Meteor.userId()
+        'click #leave': -> AccountsTemplates.logout()
         
+    Template.home.events
         'click #toggleOn': ->
             selectedtags.push @name.toString()
             #FlowRouter.setQueryParams tags: @selectedtags.toString()
@@ -140,12 +174,12 @@ if Meteor.isClient
                     'strikeThrough'
                     #'subscript'
                     #'superscript'
-                    'fontFamily'
-                    'fontSize'
+                    #'fontFamily'
+                    #'fontSize'
                     #'color'
                     'formatBlock'
-                    'blockStyle'
-                    'inlineStyle'
+                    #'blockStyle'
+                    #'inlineStyle'
                     'align'
                     'insertOrderedList'
                     'insertUnorderedList'
@@ -176,23 +210,12 @@ if Meteor.isServer
         update: (userId, post)-> post.authorId is userId
         remove: (userId, post)-> post.authorId is userId
 
-    Meteor.publish 'people', -> Meteor.users.find {}, fields: rating: 1, username: 1, points: 1
+    Meteor.publish 'people', -> Meteor.users.find {}, fields: username: 1
 
-    Meteor.publish 'posts', (selectedtags, editing, view, authorFilter)->
-        if editing? then return Posts.find editing
-        else if view?
-            switch view
-                when 'posts' then return Posts.find authorId: @userId
-        match = {}
-        if authorFilter? then match.authorId= authorFilter
-        if selectedtags.length > 0 then match.tags= $all: selectedtags else return null
-        return Posts.find match
-
-    Meteor.publish 'tags', (selectedtags, view, authorFilter)->
+    Meteor.publish 'tags', (selectedtags, authorFilter)->
         self = @
         match = {}
        
-        if view? then match.authorId= @userId
         if authorFilter? then match.authorId= authorFilter
         if selectedtags?.length > 0 then match.tags= $all: selectedtags
 
@@ -212,3 +235,10 @@ if Meteor.isServer
                 count: tag.count
 
         self.ready()
+
+    Meteor.publish 'posts', (selectedtags, authorFilter, editing)->
+        if editing? then return Posts.find editing
+        match = {}
+        if authorFilter? then match.authorId= authorFilter
+        if selectedtags?.length > 0 then match.tags= $all: selectedtags else return null
+        return Posts.find match
