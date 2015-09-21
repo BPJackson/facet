@@ -22,3 +22,5 @@ dburles:collection-helpers
 iandouglas:accounts-ui-semantic-ui
 kadira:flow-router
 kadira:blaze-layout
+meteorhacks:kadira
+kadira:debug

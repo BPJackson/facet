@@ -13,41 +13,8 @@ FlowRouter.route '/',
 
 Posts.helpers
     author: -> Meteor.users.findOne @authorId
-    bidder: -> Meteor.users.findOne @bidderId
 
 Meteor.methods
-    bid: (postId)->
-        post = Posts.findOne postId
-
-        Meteor.users.update post.bidderId, $inc: points: post.bid
-        Meteor.users.update Meteor.userId(), $inc: points: -(post.bid+1)
-
-        Posts.update postId, $set: {bidderId: Meteor.userId()}, $inc: bid: 1
-
-    accept: (postId)->
-        post = Posts.findOne postId
-        Posts.update postId, $set: accepted: true
-        Meteor.users.update Meteor.userId(), $inc: points: post.bid
-    
-    refund: (postId)->
-        post = Posts.findOne postId
-        Posts.update postId, $set: accepted: false, bid: 0, bidderId: null, recommended: null
-        if post.recommended
-            Meteor.users.update Meteor.userId(), $inc: points: -post.bid, rating: -1
-        else
-            Meteor.users.update Meteor.userId(), $inc: points: -post.bid
-        Meteor.users.update post.bidderId, $inc: points: post.bid
-
-    recommend: (postId)->
-        post = Posts.findOne postId
-        Posts.update postId, $set: recommended: true
-        Meteor.users.update post.authorId, $inc: rating: 1
-
-    unrecommend: (postId)->
-        post = Posts.findOne postId
-        Posts.update postId, $set: recommended: false
-        Meteor.users.update post.authorId, $inc: rating: -1
-
     delete: (postId)-> Posts.remove postId
 
 if Meteor.isClient
@@ -67,8 +34,8 @@ if Meteor.isClient
         #console.log paramArray
 
         #self.autorun -> Meteor.subscribe 'tags', FlowRouter.getQueryParam('tags')?.split(',')
-        self.autorun -> Meteor.subscribe 'tags', selectedtags.array()
-        self.autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing'), Session.get 'view'
+        self.autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'view', Session.get 'authorFilter'
+        self.autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing'), Session.get 'view', Session.get 'authorFilter'
         self.subscribe 'people'
 
 
@@ -77,57 +44,42 @@ if Meteor.isClient
         tags: -> if Posts.find().count() then Tags.find {count: $lt: Posts.find().count()} else Tags.find()
         posts: -> Posts.find {}
         user: -> Meteor.user()
+        toggleonclass: -> 
+            switch
+                when @count > 50 then 'huge'
+                when @count > 40 then 'big'
+                when @count > 30 then 'large'
+                when @count > 20 then 'medium'
+                #when @count > 10 then 'small'
+                #when @count > 3 then 'tiny'
+                else 'small'
+                
 
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
         isAuthor: -> Meteor.userId() is @authorId
-
-        canEdit: -> Meteor.userId() is @authorId and not @accepted and @bid is 0
-
-        bidinc: -> @bid + 1
-
-        canBid: -> Meteor.userId() and Meteor.userId() isnt @authorId and not @accepted
-
-        bidclass: ->
-            my = Meteor.user()
-            if my?
-                if my._id is @bidderId and my.points > 0 then ''
-                else if my.points > @bid then ''
-            else 'disabled'
-
-        canAccept: -> Meteor.userId() is @authorId and not @accepted and @bid > 0
-        canRefund: -> Meteor.userId() is @authorId and @accepted and @bid > 0
-
-        canRecommend: -> @accepted and not @recommended and Meteor.userId() is @bidderId
-        canUnrecommend: -> @accepted and @recommended and Meteor.userId() is @bidderId
-
-    Template.edit.helpers
-        saveclass: -> if not @tags? then 'disabled' else ''
+        postTagClass: -> if @valueOf() in selectedtags.array() then 'grey' else 'small'
 
     Template.home.events
         'click #home': ->
             selectedtags.clear()
             Session.set 'editing', null
             Session.set 'view', null
+            Session.set 'authorFilter', null
             FlowRouter.setQueryParams tags: null
 
         'click #add': ->
             Session.set 'view', null
+            Session.set 'authorFilter', null
             selectedtags.clear()
             newId = Posts.insert {
                 authorId: Meteor.userId()
-                bid: 0
-                bidderId: ''
-                accepted: false
+                timestamp: Date.now()
                 }
 
             Session.set 'editing', newId
 
         'click #posts': -> Session.set 'view','posts'
-        
-        'click #bids': -> Session.set 'view','bids'
-        
-        'click #won': -> Session.set 'view','won'
         
         'click #toggleOn': ->
             selectedtags.push @name.toString()
@@ -141,7 +93,19 @@ if Meteor.isClient
 
     Template.post.events
         'click #edit': (e,t)-> Session.set 'editing', @_id
-
+        
+        'click #clone': (e,t)-> 
+            Session.set 'view', null
+            Session.set 'authorFilter', null
+            selectedtags.clear()
+            cloneId = Posts.insert {
+                authorId: Meteor.userId()
+                timestamp: Date.now()
+                body: @body
+                tags: @tags
+                }
+            Session.set 'editing', cloneId
+        
         'click #save': (e,t)->
             body = t.find('textarea').value
             Posts.update @_id, $set: body: body
@@ -150,22 +114,18 @@ if Meteor.isClient
             @tags.forEach (tag)-> selectedtags.push tag
             Session.set 'editing', null
 
+        'click #author': ->
+            Session.set 'authorFilter',@authorId
+
         'click #delete': ->
             Meteor.call 'delete', @_id
             selectedtags.clear()
             Session.set 'editing', null
-
-        'click #recommend': -> Meteor.call 'recommend', @_id
-
-        'click #bid': -> Meteor.call 'bid', @_id
-
-        'click #accept': -> Meteor.call 'accept', @_id
-
-        'click #refund': -> Meteor.call 'refund', @_id
-
-        'click #recommend': -> Meteor.call 'recommend', @_id
-        
-        'click #unrecommend': -> Meteor.call 'unrecommend', @_id
+            
+        'click .postTag': (e)->
+            Session.set 'editing', null
+            if @toString() not in selectedtags.array() then selectedtags.push @toString()
+            else selectedtags.remove @toString()
 
     Template.edit.onRendered ->
         $ ->
@@ -176,41 +136,39 @@ if Meteor.isClient
                 buttons: [
                     'bold'
                     'italic'
-                    #'underline'
-                    #'strikeThrough'
+                    'underline'
+                    'strikeThrough'
                     #'subscript'
                     #'superscript'
-                    #'fontFamily'
-                    #'fontSize'
+                    'fontFamily'
+                    'fontSize'
                     #'color'
-                    #'formatBlock'
-                    #'blockStyle'
-                    #'inlineStyle'
-                    #'align'
-                    #'insertOrderedList'
+                    'formatBlock'
+                    'blockStyle'
+                    'inlineStyle'
+                    'align'
+                    'insertOrderedList'
                     'insertUnorderedList'
-                    #'outdent'
-                    #'indent'
-                    #'selectAll'
+                    'outdent'
+                    'indent'
+                    'selectAll'
                     'createLink'
                     'insertImage'
                     'insertVideo'
-                    #'table'
-                    #'undo'
-                    #'redo'
-                    #'html'
+                    'table'
+                    'undo'
+                    'redo'
+                    'html'
                     #'save'
-                    #'insertHorizontalRule'
+                    'insertHorizontalRule'
                     #'uploadFile'
-                    #'removeFormat'
+                    'removeFormat'
                     'fullscreen'
                     ]
            return
 
 if Meteor.isServer
     Accounts.onCreateUser (options, user)->
-        user.points = 100
-        user.rating = 0
         user
 
     Posts.allow
@@ -220,21 +178,22 @@ if Meteor.isServer
 
     Meteor.publish 'people', -> Meteor.users.find {}, fields: rating: 1, username: 1, points: 1
 
-    Meteor.publish 'posts', (selectedtags, editing, view)->
+    Meteor.publish 'posts', (selectedtags, editing, view, authorFilter)->
         if editing? then return Posts.find editing
         else if view?
             switch view
                 when 'posts' then return Posts.find authorId: @userId
-                when 'bids' then return Posts.find bidderId: @userId
-                when 'won' then return Posts.find accepted: true, bidderId: @userId
         match = {}
+        if authorFilter? then match.authorId= authorFilter
         if selectedtags.length > 0 then match.tags= $all: selectedtags else return null
         return Posts.find match
 
-    Meteor.publish 'tags', (selectedtags)->
+    Meteor.publish 'tags', (selectedtags, view, authorFilter)->
         self = @
         match = {}
-
+       
+        if view? then match.authorId= @userId
+        if authorFilter? then match.authorId= authorFilter
         if selectedtags?.length > 0 then match.tags= $all: selectedtags
 
         cloud = Posts.aggregate [

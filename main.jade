@@ -16,81 +16,48 @@ template(name='home')
             i.home.icon
         +loginButtons
         if currentUser
-            // .item #{user.rating}
-            // .item #{user.points} pts
             a#posts.item Mine
-            // a#bids.item My Bids
-            // a#won.item Won
-            .right.menu
-                unless $.Session.get 'editing'
-                    a#add.header.item Add
+            unless $.Session.get 'editing'
+                a#add.item Add
     unless $.Session.get 'editing'
-        unless $.Session.get 'view'
-            .ui.segment
-                each selectedtags
-                    #toggleOff.ui.large.basic.grey.compact.button
-                        | #{this}
-                each tags
-                    #toggleOn.ui.compact.basic.button
-                        |#{name}
-                        small #{count}
+        .ui.segment
+            each selectedtags
+                #toggleOff.ui.large.grey.compact.button
+                    | #{this}
+            each tags
+                #toggleOn.ui.compact.button(class=toggleonclass)
+                    |#{name}
+                    small #{count}
     .ui.cards
-        if posts
-            each posts
-                .ui.fluid.card
-                    +post
-        else
-            h4 No posts to show
+        each posts
+            .ui.fluid.card
+                +post
 
 template(name='post')
     if editing
         +edit
     else
         .content
+            if isAuthor
+                #edit.ui.right.floated.small.compact.basic.button Edit
             unless isAuthor
-                .right.floated by #{author.username}  #{author.rating} 
+                #author.ui.right.floated.compact.basic.button by #{author.username}
+            #clone.ui.right.floated.small.compact.basic.button Clone
             .header
                 each tags
-                    .ui.basic.large.label.titletag #{this}
-            if canEdit
-                a#edit.ui.right.blue.corner.label
-                    i.pencil.inverted.link.icon
+                    .ui.compact.button.postTag(class=postTagClass) #{this}
         .content
             .description.froala-view !{body}
-        // .content
-        //     unless accepted
-        //         if canBid
-        //             #bid.ui.blue.button(class=bidclass) Bid #{bidinc}
-        //         if canAccept
-        //             #accept.ui.green.button Accept #{bid}
-        //         .ui.large.basic.label
-        //             if bidder
-        //                 |Highbid #{bid} by #{bidder.username} #{bidder.rating}
-        //             else
-        //                 |No bids
-        //     if canRefund
-        //         a#refund Refund and Cancel
-        //     if canRecommend
-        //         a#recommend Recommend
-        //     if canUnrecommend
-        //         a#unrecommend Unrecommend
-        // .content
-        //     if accepted
-        //         .ui.green.bottom.left.attached.label Accepted #{bid} from #{bidder.username} #{bidder.rating}
-        //     if recommended
-        //         .ui.blue.bottom.right.attached.label Recommended
 
 
 template(name='edit')
     .content
         .ui.form
+            .editable-list-reveal(style="margin:10px;color:grey;")
+                +editableList collection="posts" field="tags" placeholder="New tag" horizontal=true hideInput=false class="ui large basic label" liStyle="margin:10px;" inputStyle="color:#000;" editStyle="height:18px;border:0;" objectTypeText="tag" allowPasteMultiple=true
             .field
-                label Tags
-                +editableList collection="posts" field="tags" liStyle="margin: 15px 5px 0 0;" class="ui header"
-            .field
-                label Body
                 textarea#editarea.bs #{body}
         .ui.hidden.divider
         .bottomGroup
-            #save.ui.basic.green.button(class=saveclass) Save
-            #delete.ui.right.floated.small.red.basic.button Delete
+            #save.ui.basic.button(class=saveclass) Save
+            #delete.ui.right.floated.small.basic.compact.button Delete
