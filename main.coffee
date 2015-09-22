@@ -40,14 +40,14 @@ if Meteor.isClient
             required: true
             minLength: 3
         }
-        #{
-            #_id: 'email'
-            #type: 'email'
-            #required: true
-            #displayName: 'email'
-            #re: /.+@(.+){2,}\.(.+){2,}/
-            #errStr: 'Invalid email'
-        #}
+        {
+            _id: 'email'
+            type: 'email'
+            required: true
+            displayName: 'email'
+            re: /.+@(.+){2,}\.(.+){2,}/
+            errStr: 'Invalid email'
+        }
         pwd
     ]
 
@@ -71,7 +71,8 @@ if Meteor.isClient
 
     Template.home.helpers
         selectedtags: -> selectedtags.list()
-        tags: -> if Posts.find().count() then Tags.find {count: $lt: Posts.find().count()} else Tags.find()
+        #tags: -> if Posts.find().count() then Tags.find {count: $lt: Posts.find().count()} else Tags.find()
+        tags: -> Tags.find()
         posts: -> Posts.find {}
         user: -> Meteor.user()
         homeclass: -> if selectedtags.array().length is 0 and not Session.get('authorFilter') and not Session.get('editing') then 'active' else ''
@@ -90,7 +91,7 @@ if Meteor.isClient
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
         isAuthor: -> Meteor.userId() is @authorId
-        postTagClass: -> if @valueOf() in selectedtags.array() then 'grey' else 'small'
+        postTagClass: -> if @valueOf() in selectedtags.array() then 'active' else 'small'
 
     Template.nav.events
         'click #home': ->
@@ -111,8 +112,11 @@ if Meteor.isClient
 
             Session.set 'editing', newId
 
-        'click #posts': -> Session.set 'authorFilter',Meteor.userId()
-        'click #leave': -> AccountsTemplates.logout()
+        'click #mine': -> 
+            selectedtags.clear()
+            Session.set 'authorFilter',Meteor.userId()
+
+        'click #logout': -> AccountsTemplates.logout()
         
     Template.home.events
         'click #toggleOn': ->
@@ -162,7 +166,14 @@ if Meteor.isClient
             else selectedtags.remove @toString()
 
     Template.edit.onRendered ->
+        self = @
         $ ->
+            $('#tagselector').dropdown
+                allowAdditions: true
+                placeholder: 'add tags'
+                onAdd: (addedValue) -> Posts.update self.data._id, $addToSet: tags: addedValue
+                onRemove: (removedValue) -> Posts.update self.data._id, $pull: tags: removedValue
+            
             $('#editarea').editable
                 inlineMode: false
                 minHeight: 100
@@ -199,6 +210,9 @@ if Meteor.isClient
                     'removeFormat'
                     'fullscreen'
                     ]
+            #$(".tagpicker").select2
+                #tags: "true"
+                #placeholder: "Select an option"
            return
 
 if Meteor.isServer
@@ -226,6 +240,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedtags }
             { $sort: count: -1, _id: 1 }
+            { $limit: 20 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
@@ -241,4 +256,4 @@ if Meteor.isServer
         match = {}
         if authorFilter? then match.authorId= authorFilter
         if selectedtags?.length > 0 then match.tags= $all: selectedtags else return null
-        return Posts.find match
+        return Posts.find match, limit: 1

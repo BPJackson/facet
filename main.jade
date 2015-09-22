@@ -15,54 +15,59 @@ template(name='nav')
     .ui.inverted.fixed.menu
         a#home.icon.item(href='/' class=homeclass) Home
         if currentUser
+            a#mine.item(class=mineclass) My Posts
             unless $.Session.get 'editing'
-                a#add.item Submit
-            a#posts.item(class=mineclass) Mine
+                a#add.item Add
         .right.menu
             if currentUser
-                a#leave.item Sign Out
+                a#logout.item Sign Out
             unless currentUser
                 a.item(href='/sign-in') Sign In
 
-
-
 template(name='home')
     unless $.Session.get 'editing'
-        .ui.segment
+        .ui.inverted.grey.raised.segment
             each selectedtags
-                #toggleOff.ui.large.grey.compact.button
+                #toggleOff.ui.large.active.compact.button
                     | #{this}
             each tags
                 #toggleOn.ui.compact.button(class=toggleonclass)
                     |#{name}
                     small #{count}
-    .ui.two.stackable.cards
+    .ui.cards
         each posts
-            .ui.card
+            .ui.fluid.card
                 +post
 
 template(name='post')
     if editing
         +edit
     else
-        .content
+        .content.lg
             .header
                 each tags
                     .ui.compact.button.postTag(class=postTagClass) #{this}
-        .content
+        .content.lg
             .description.froala-view !{body}
-        .content
-            if isAuthor
-                #edit.ui.right.floated.small.compact.button Edit
-            unless isAuthor
-                #author.ui.right.floated.compact.disabled.button by #{author.username}
-            #clone.ui.right.floated.small.compact.button Clone
+        if currentUser
+            .content.lg
+                if isAuthor
+                    #edit.ui.right.floated.small.compact.button Edit
+                unless isAuthor
+                    #author.ui.right.floated.compact.disabled.button by #{author.username}
+                #clone.ui.right.floated.small.compact.button Clone
 
 
 template(name='edit')
     .content
-        .editable-list-reveal(style="margin:10px;color:grey;")
-            +editableList collection="posts" field="tags" placeholder="New tag" horizontal=true hideInput=false class="ui large label" liStyle="margin:10px;" inputStyle="color:#000;" editStyle="height:18px;border:0;" objectTypeText="tag" allowPasteMultiple=true
+        .ui.form
+        .field
+            select#tagselector.ui.multiple.search(multiple='true')
+                each tags
+                    option(value=this selected='selected') #{this}
+
+        // .editable-list-reveal(style="margin:10px;color:grey;")
+        //     +editableList collection="posts" field="tags" placeholder="New tag" horizontal=true hideInput=false class="ui large label" liStyle="margin:10px;" inputStyle="color:#000;" editStyle="height:18px;border:0;" objectTypeText="tag" allowPasteMultiple=true
         textarea#editarea.bs #{body}
         .ui.hidden.divider
         .bottomGroup
