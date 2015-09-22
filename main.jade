@@ -14,26 +14,31 @@ template(name='layout')
 template(name='nav')
     .ui.inverted.fixed.menu
         a#home.icon.item(href='/' class=homeclass) Home
-        if currentUser
-            a#mine.item(class=mineclass) My Posts
-            unless $.Session.get 'editing'
-                a#add.item Add
         .right.menu
+            if currentUser
+                .item #{user.username}
+                a#mine.item(class=mineclass) My Posts
+                unless $.Session.get 'editing'
+                    a#add.item Add
             if currentUser
                 a#logout.item Sign Out
             unless currentUser
                 a.item(href='/sign-in') Sign In
 
+template(name='cloud')
+    .ui.inverted.grey.raised.segment
+        select#mainfilter.ui.multiple.search.input(multiple='true')
+            each tags
+                option(value=this.name) #{this.name}
+
+        each tags
+            #picktag.ui.compact.button(class=toggleonclass)
+                |#{name}
+                small #{count}
+                
 template(name='home')
     unless $.Session.get 'editing'
-        .ui.inverted.grey.raised.segment
-            each selectedtags
-                #toggleOff.ui.large.active.compact.button
-                    | #{this}
-            each tags
-                #toggleOn.ui.compact.button(class=toggleonclass)
-                    |#{name}
-                    small #{count}
+        +cloud
     .ui.cards
         each posts
             .ui.fluid.card
@@ -61,14 +66,12 @@ template(name='post')
 template(name='edit')
     .content
         .ui.form
-        .field
-            select#tagselector.ui.multiple.search(multiple='true')
-                each tags
-                    option(value=this selected='selected') #{this}
-
-        // .editable-list-reveal(style="margin:10px;color:grey;")
-        //     +editableList collection="posts" field="tags" placeholder="New tag" horizontal=true hideInput=false class="ui large label" liStyle="margin:10px;" inputStyle="color:#000;" editStyle="height:18px;border:0;" objectTypeText="tag" allowPasteMultiple=true
-        textarea#editarea.bs #{body}
+            .field
+                select#tagselector.ui.multiple.search(multiple='true')
+                    each tags
+                        option(value=this selected='selected') #{this}
+            .field
+                textarea#editarea.bs #{body}
         .ui.hidden.divider
         .bottomGroup
             #save.ui.button(class=saveclass) Save
