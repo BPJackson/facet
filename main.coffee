@@ -6,7 +6,7 @@ FlowRouter.route '/',
     action: (params, queryParams)->
         selectedtags = queryParams.tags?.split()
         #console.log selectedtags
-        GAnalytics.pageview()
+        GAnalytics.pageview('/')
         #selectedtags.clear()
         BlazeLayout.render("layout", {content: "home", nav: "nav"});
 
@@ -42,17 +42,13 @@ if Meteor.isClient
             required: true
             minLength: 3
         }
-        {
-            _id: 'email'
-            type: 'email'
-            required: true
-            displayName: 'email'
-            re: /.+@(.+){2,}\.(.+){2,}/
-            errStr: 'Invalid email'
-        }
         pwd
     ]
 
+    Template.nav.onCreated ->
+        self = @
+        self.autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'authorFilter'
+    
     Template.home.onCreated ->
         self = @
 
@@ -61,32 +57,21 @@ if Meteor.isClient
         #console.log paramArray
 
         #self.autorun -> Meteor.subscribe 'tags', FlowRouter.getQueryParam('tags')?.split(',')
-        self.autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'authorFilter'
         self.autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('authorFilter'), Session.get('editing')
         self.subscribe 'people'
 
-    Template.cloud.onRendered ->
+    Template.nav.onRendered ->
         self = @
         $ ->
             $('#mainfilter').dropdown
                 allowAdditions: true
                 placeholder: 'Filter tags'
-                onAdd: (value) -> if value not in selectedtags.array() then selectedtags.push value
+                onAdd: (value) -> 
+                    if value not in selectedtags.array()
+                        GAnalytics.pageview(value)
+                        selectedtags.push value
                 onRemove: (value) -> selectedtags.remove value
 
-    Template.cloud.helpers
-        tags: -> Tags.find()
-        selectedtags: -> selectedtags.list()
-        toggleonclass: -> 
-            switch
-                when @count > 50 then 'huge'
-                when @count > 40 then 'huge'
-                when @count > 20 then 'big'
-                when @count > 10 then 'large'
-                #when @count > 10 then 'small'
-                #when @count > 3 then 'tiny'
-                else 'medium'
-                
     Template.home.helpers
         #tags: -> if Posts.find().count() then Tags.find {count: $lt: Posts.find().count()} else Tags.find()
         posts: -> Posts.find {}
@@ -98,34 +83,35 @@ if Meteor.isClient
         postTagClass: -> if @valueOf() in selectedtags.array() then 'active' else 'small'
    
     Template.nav.helpers
+        tags: -> Tags.find()
+        selectedtags: -> selectedtags.list()
         homeclass: -> if selectedtags.array().length is 0 and not Session.get('authorFilter') and not Session.get('editing') then 'active' else ''
         mineclass: -> if Session.equals 'authorFilter', Meteor.userId() then 'active' else ''
         user: -> Meteor.user()
 
-   
-
     Template.nav.events
         'click #home': ->
+            GAnalytics.pageview('home')
             selectedtags.clear()
             Session.set 'editing', null
-            Session.set 'view', null
             Session.set 'authorFilter', null
             FlowRouter.setQueryParams tags: null
             $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
 
         'click #add': ->
-            Session.set 'view', null
-            Session.set 'authorFilter', null
-            selectedtags.clear()
-            $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
             newId = Posts.insert {
                 authorId: Meteor.userId()
                 timestamp: Date.now()
                 }
 
             Session.set 'editing', newId
+            #GAnalytics.pageview('add')
+            Session.set 'authorFilter', null
+            selectedtags.clear()
+            #$('.ui.dropdown').dropdown('set exactly', selectedtags.array())
 
         'click #mine': -> 
+            GAnalytics.pageview('mine')
             selectedtags.clear()
             $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
 
@@ -135,6 +121,7 @@ if Meteor.isClient
         
     Template.home.events
         'click #picktag': ->
+            GAnalytics.pageview(@name.toString())
             selectedtags.push @name.toString()
             #FlowRouter.setQueryParams tags: @selectedtags.toString()
             FlowRouter.setQueryParams tags: selectedtags.join([separator = ','])
@@ -162,13 +149,15 @@ if Meteor.isClient
         
         'click #save': (e,t)->
             body = t.find('textarea').value
-            Posts.update @_id, $set: body: body
-
-            selectedtags.clear()
-            @tags.forEach (tag)-> selectedtags.push tag
+            tags = $('.ui.dropdown').dropdown('get value')
+            Posts.update @_id, $set: body: body, tags: tags
             Session.set 'editing', null
-            $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
-
+            
+            selectedtags.clear()
+            tags.forEach (tag)-> selectedtags.push tag
+            Meteor.setTimeout (->
+                $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
+            ), 500
 
         'click #author': ->
             Session.set 'authorFilter',@authorId
@@ -181,7 +170,8 @@ if Meteor.isClient
             Session.set 'editing', null
             
         'click .postTag': (e)->
-            Session.set 'editing', null
+            Session.set 'editing', null        
+            GAnalytics.pageview(@toString())
             if @toString() not in selectedtags.array() then selectedtags.push @toString()
             else selectedtags.remove @toString()
             $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
@@ -192,8 +182,8 @@ if Meteor.isClient
             $('#tagselector').dropdown
                 allowAdditions: true
                 placeholder: 'add tags'
-                onAdd: (addedValue) -> Posts.update self.data._id, $addToSet: tags: addedValue
-                onRemove: (removedValue) -> Posts.update self.data._id, $pull: tags: removedValue
+                #onAdd: (addedValue) -> Posts.update self.data._id, $addToSet: tags: addedValue
+                #onRemove: (removedValue) -> Posts.update self.data._id, $pull: tags: removedValue
             
             $('#editarea').editable
                 inlineMode: false
@@ -255,7 +245,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedtags }
             { $sort: count: -1, _id: 1 }
-            { $limit: 40 }
+            #{ $limit: 7 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
@@ -271,4 +261,4 @@ if Meteor.isServer
         match = {}
         if authorFilter? then match.authorId= authorFilter
         if selectedtags?.length > 0 then match.tags= $all: selectedtags else return null
-        return Posts.find match, limit: 1
+        return Posts.find match, limit: 7

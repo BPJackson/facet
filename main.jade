@@ -13,7 +13,11 @@ template(name='layout')
 
 template(name='nav')
     .ui.inverted.fixed.menu
-        a#home.icon.item(href='/' class=homeclass) Home
+        // a#home.icon.item(href='/' class=homeclass) Home
+        .item
+            select#mainfilter.ui.multiple.search.input(multiple='true')
+                each tags
+                    option(value=this.name) #{this.name}
         .right.menu
             if currentUser
                 .item #{user.username}
@@ -25,20 +29,19 @@ template(name='nav')
             unless currentUser
                 a.item(href='/sign-in') Sign In
 
-template(name='cloud')
-    .ui.inverted.grey.raised.segment
-        select#mainfilter.ui.multiple.search.input(multiple='true')
-            each tags
-                option(value=this.name) #{this.name}
-
-        each tags
-            #picktag.ui.compact.button(class=toggleonclass)
-                |#{name}
-                small #{count}
+// template(name='cloud')
+//     .ui.inverted.grey.raised.segment
+        // if Template.subscriptionsReady
+        // each tags
+        //     #picktag.ui.compact.button
+        //         |#{name}
+                // small #{count}
+        // else
+        //     |loading...
                 
 template(name='home')
-    unless $.Session.get 'editing'
-        +cloud
+    // unless $.Session.get 'editing'
+    //     +cloud
     .ui.cards
         each posts
             .ui.fluid.card
