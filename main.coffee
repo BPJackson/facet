@@ -10,7 +10,6 @@ FlowRouter.route '/',
         #selectedtags.clear()
         BlazeLayout.render("layout", {content: "home", nav: "nav"});
 
-
 Posts.helpers
     author: -> Meteor.users.findOne @authorId
 
@@ -30,7 +29,6 @@ if Meteor.isClient
         defaultContentRegion: 'content'
 
     AccountsTemplates.configureRoute 'signIn'
-
 
     pwd = AccountsTemplates.removeField('password')
     AccountsTemplates.removeField 'email'
@@ -62,59 +60,35 @@ if Meteor.isClient
 
     Template.nav.onRendered ->
         self = @
-        #Tracker.afterFlush ->
-        #tags = Tags.find().fetch()
-        #debugger
-
-        #console.log/ tags
-        #$('.ui.search').search 
-        	#source: content
-        	    #searchFields: [ 'name' ]
-                #minCharacters: 0
-        $('.basic.segment')
-            .visibility
-                type   : 'fixed'
-                offset : -5 
-        
         $('#mainfilter').dropdown
             allowAdditions: true
-            onAdd: (value) -> 
+            duration: 0
+            placeholder: 'filter tags'
+            transition: 'none'
+            action: (text, value)->
                 GAnalytics.pageview(value)
                 selectedtags.push value
-                Meteor.setTimeout ->
-                    $('.ui.dropdown').dropdown('clear')
-                , 100
-                #console.log @
-                #debugger
-            #onRemove: (value) -> selectedtags.remove value
+        Meteor.setTimeout ->
+            $('.ui.dropdown').dropdown('show')
+        , 400    
         return
 
     Template.home.helpers
-        #tags: -> if Posts.find().count() then Tags.find {count: $lt: Posts.find().count()} else Tags.find()
         posts: -> Posts.find {}
         user: -> Meteor.user()
 
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
         isAuthor: -> Meteor.userId() is @authorId
-        postTagClass: -> if @valueOf() in selectedtags.array() then 'active' else 'small'
+        postTagClass: -> if @valueOf() in selectedtags.array() then 'active' else ''
    
     Template.nav.helpers
         tags: -> Tags.find()
         selectedtags: -> selectedtags.list()
-        homeclass: -> if selectedtags.array().length is 0 and not Session.get('authorFilter') and not Session.get('editing') then 'active' else ''
         mineclass: -> if Session.equals 'authorFilter', Meteor.userId() then 'active' else ''
         user: -> Meteor.user()
 
     Template.nav.events
-        'click #home': ->
-            GAnalytics.pageview('home')
-            selectedtags.clear()
-            Session.set 'editing', null
-            Session.set 'authorFilter', null
-            FlowRouter.setQueryParams tags: null
-            $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
-
         'click #add': ->
             newId = Posts.insert {
                 authorId: Meteor.userId()
@@ -122,23 +96,19 @@ if Meteor.isClient
                 }
 
             Session.set 'editing', newId
-            #GAnalytics.pageview('add')
             Session.set 'authorFilter', null
             selectedtags.clear()
-            #$('.ui.dropdown').dropdown('set exactly', selectedtags.array())
 
         'click #mine': -> 
             GAnalytics.pageview('mine')
             selectedtags.clear()
-            $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
-
             Session.set 'authorFilter',Meteor.userId()
 
         'click #logout': -> AccountsTemplates.logout()
         'click #toggleOff': ->
             selectedtags.remove @toString()
+            $('.ui.dropdown').dropdown('show')
             FlowRouter.setQueryParams tags: selectedtags.join([separator = ','])
-
 
     Template.post.events
         'click #edit': (e,t)-> Session.set 'editing', @_id
@@ -147,7 +117,6 @@ if Meteor.isClient
             Session.set 'view', null
             Session.set 'authorFilter', null
             selectedtags.clear()
-            $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
             
             cloneId = Posts.insert {
                 authorId: Meteor.userId()
@@ -160,14 +129,15 @@ if Meteor.isClient
         'click #save': (e,t)->
             body = t.find('textarea').value
             tags = $('.ui.dropdown').dropdown('get value')
-            Posts.update @_id, $set: body: body, tags: tags
+            tags_lower = tags.map (tag)-> tag.toLowerCase()
+            Posts.update @_id, $set: body: body, tags: tags_lower
             Session.set 'editing', null
             
             selectedtags.clear()
-            tags.forEach (tag)-> selectedtags.push tag
-            Meteor.setTimeout (->
-                $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
-            ), 500
+            tags_lower.forEach (tag)-> selectedtags.push tag
+            #Meteor.setTimeout (->
+                #$('.ui.dropdown').dropdown('set exactly', selectedtags.array())
+            #), 500
 
         'click #author': ->
             Session.set 'authorFilter',@authorId
@@ -175,16 +145,17 @@ if Meteor.isClient
         'click #delete': ->
             Meteor.call 'delete', @_id
             selectedtags.clear()
-            $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
-
             Session.set 'editing', null
             
         'click .postTag': (e)->
             Session.set 'editing', null        
             GAnalytics.pageview(@toString())
-            if @toString() not in selectedtags.array() then selectedtags.push @toString()
-            else selectedtags.remove @toString()
-            $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
+            if @toString() not in selectedtags.array()
+                selectedtags.push @toString()
+                $('.ui.dropdown').dropdown('show')
+            else 
+                selectedtags.remove @toString()
+                $('.ui.dropdown').dropdown('show')
 
     Template.edit.onRendered ->
         self = @
@@ -192,6 +163,8 @@ if Meteor.isClient
             $('#tagselector').dropdown
                 allowAdditions: true
                 placeholder: 'add tags'
+                #namespace: 'tagselector'
+                #onAdd: (value)-> value.toLowerCase()
 
             $('#editarea').editable
                 inlineMode: false
@@ -201,7 +174,7 @@ if Meteor.isClient
                     'bold'
                     'italic'
                     'underline'
-                    'strikeThrough'
+                    #'strikeThrough'
                     #'subscript'
                     #'superscript'
                     #'fontFamily'
@@ -215,18 +188,18 @@ if Meteor.isClient
                     'insertUnorderedList'
                     'outdent'
                     'indent'
-                    'selectAll'
+                    #'selectAll'
                     'createLink'
                     'insertImage'
                     'insertVideo'
                     'table'
-                    'undo'
-                    'redo'
+                    #'undo'
+                    #'redo'
                     'html'
                     #'save'
-                    'insertHorizontalRule'
+                    #'insertHorizontalRule'
                     #'uploadFile'
-                    'removeFormat'
+                    #'removeFormat'
                     'fullscreen'
                     ]
            return
@@ -253,7 +226,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedtags }
             { $sort: count: -1, _id: 1 }
-            { $limit: 20 }
+            { $limit: 7 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
@@ -268,5 +241,5 @@ if Meteor.isServer
         if editing? then return Posts.find editing
         match = {}
         if authorFilter? then match.authorId= authorFilter
-        if selectedtags?.length > 0 then match.tags= $all: selectedtags else return null
+        if selectedtags?.length > 0 then match.tags= $all: selectedtags else Posts.find {}, {sort: timestamp: -1}, limit: 7
         return Posts.find match, limit: 7

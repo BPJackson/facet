@@ -8,18 +8,17 @@ head
 
 template(name='layout')
     .layout
-        +Template.dynamic template=nav
+        unless $.Session.get 'editing'
+            +Template.dynamic template=nav
         +Template.dynamic template=content
 
 template(name='nav')
-    .ui.compact.lg.raised.segment
+    .ui.lg.right.aligned.segment
         each selectedtags
-            #toggleOff.ui.active.button #{this}
-        unless $.Session.get 'editing'
-            if Template.subscriptionsReady
-                select#mainfilter.ui.multiple.search.input(multiple='true')
-                    each tags
-                        option(value=this.name) #{this.name}
+            #toggleOff.ui.active.compact.button #{this}
+        select#mainfilter.ui.search.input.simple.dropdown
+            each tags
+                option(value=this.name) #{this.name}
     if currentUser
         .ui.inverted.borderless.bottom.fixed.menu
             .item #{user.username}
@@ -31,17 +30,16 @@ template(name='nav')
 
 template(name='home')
     each posts
-        .ui.top.attached.segment.lg
+        .ui.segment.lg
             +post
 
 template(name='post')
     if editing
         +edit
     else
-        .ui.header.big.horizontal.list
-            each tags
-                .ui.item #{this}
-        .description.froala-view !{body}
+        each tags
+            .ui.compact.button.postTag(class=postTagClass) #{this}
+        .froala-view !{body}
         if currentUser
             if isAuthor
                 #edit.ui.small.compact.button Edit
@@ -54,7 +52,7 @@ template(name='edit')
     .content
         .ui.form
             .field
-                select#tagselector.ui.multiple.search(multiple='true')
+                select#tagselector.ui.multiple.search.simple.dropdown(multiple='true')
                     each tags
                         option(value=this selected='selected') #{this}
             .field
