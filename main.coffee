@@ -62,15 +62,32 @@ if Meteor.isClient
 
     Template.nav.onRendered ->
         self = @
-        $ ->
-            $('#mainfilter').dropdown
-                allowAdditions: true
-                placeholder: 'Filter tags'
-                onAdd: (value) -> 
-                    if value not in selectedtags.array()
-                        GAnalytics.pageview(value)
-                        selectedtags.push value
-                onRemove: (value) -> selectedtags.remove value
+        #Tracker.afterFlush ->
+        #tags = Tags.find().fetch()
+        #debugger
+
+        #console.log/ tags
+        #$('.ui.search').search 
+        	#source: content
+        	    #searchFields: [ 'name' ]
+                #minCharacters: 0
+        $('.basic.segment')
+            .visibility
+                type   : 'fixed'
+                offset : -5 
+        
+        $('#mainfilter').dropdown
+            allowAdditions: true
+            onAdd: (value) -> 
+                GAnalytics.pageview(value)
+                selectedtags.push value
+                Meteor.setTimeout ->
+                    $('.ui.dropdown').dropdown('clear')
+                , 100
+                #console.log @
+                #debugger
+            #onRemove: (value) -> selectedtags.remove value
+        return
 
     Template.home.helpers
         #tags: -> if Posts.find().count() then Tags.find {count: $lt: Posts.find().count()} else Tags.find()
@@ -118,16 +135,9 @@ if Meteor.isClient
             Session.set 'authorFilter',Meteor.userId()
 
         'click #logout': -> AccountsTemplates.logout()
-        
-    Template.home.events
-        'click #picktag': ->
-            GAnalytics.pageview(@name.toString())
-            selectedtags.push @name.toString()
-            #FlowRouter.setQueryParams tags: @selectedtags.toString()
+        'click #toggleOff': ->
+            selectedtags.remove @toString()
             FlowRouter.setQueryParams tags: selectedtags.join([separator = ','])
-            #FlowRouter.setQueryParams tag: @name.toString()
-        
-            $('.ui.dropdown').dropdown('set exactly', selectedtags.array())
 
 
     Template.post.events
@@ -182,9 +192,7 @@ if Meteor.isClient
             $('#tagselector').dropdown
                 allowAdditions: true
                 placeholder: 'add tags'
-                #onAdd: (addedValue) -> Posts.update self.data._id, $addToSet: tags: addedValue
-                #onRemove: (removedValue) -> Posts.update self.data._id, $pull: tags: removedValue
-            
+
             $('#editarea').editable
                 inlineMode: false
                 minHeight: 100
@@ -245,7 +253,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedtags }
             { $sort: count: -1, _id: 1 }
-            #{ $limit: 7 }
+            { $limit: 20 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 

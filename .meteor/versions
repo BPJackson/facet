@@ -55,7 +55,7 @@ id-map@1.0.4
 jquery@1.11.4
 kadira:blaze-layout@2.1.0
 kadira:debug@2.2.3
-kadira:flow-router@2.6.1
+kadira:flow-router@2.6.2
 lai:collection-extensions@0.1.4
 lai:ddp-inspector@1.1.7
 launch-screen@1.0.4

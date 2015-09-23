@@ -12,58 +12,42 @@ template(name='layout')
         +Template.dynamic template=content
 
 template(name='nav')
-    .ui.inverted.fixed.menu
-        // a#home.icon.item(href='/' class=homeclass) Home
-        .item
-            select#mainfilter.ui.multiple.search.input(multiple='true')
-                each tags
-                    option(value=this.name) #{this.name}
-        .right.menu
-            if currentUser
-                .item #{user.username}
-                a#mine.item(class=mineclass) My Posts
-                unless $.Session.get 'editing'
-                    a#add.item Add
-            if currentUser
+    .ui.compact.lg.raised.segment
+        each selectedtags
+            #toggleOff.ui.active.button #{this}
+        unless $.Session.get 'editing'
+            if Template.subscriptionsReady
+                select#mainfilter.ui.multiple.search.input(multiple='true')
+                    each tags
+                        option(value=this.name) #{this.name}
+    if currentUser
+        .ui.inverted.borderless.bottom.fixed.menu
+            .item #{user.username}
+            a#mine.item(class=mineclass) Mine
+            unless $.Session.get 'editing'
+                a#add.item Add
+            .right.menu
                 a#logout.item Sign Out
-            unless currentUser
-                a.item(href='/sign-in') Sign In
 
-// template(name='cloud')
-//     .ui.inverted.grey.raised.segment
-        // if Template.subscriptionsReady
-        // each tags
-        //     #picktag.ui.compact.button
-        //         |#{name}
-                // small #{count}
-        // else
-        //     |loading...
-                
 template(name='home')
-    // unless $.Session.get 'editing'
-    //     +cloud
-    .ui.cards
-        each posts
-            .ui.fluid.card
-                +post
+    each posts
+        .ui.top.attached.segment.lg
+            +post
 
 template(name='post')
     if editing
         +edit
     else
-        .content.lg
-            .header
-                each tags
-                    .ui.compact.button.postTag(class=postTagClass) #{this}
-        .content.lg
-            .description.froala-view !{body}
+        .ui.header.big.horizontal.list
+            each tags
+                .ui.item #{this}
+        .description.froala-view !{body}
         if currentUser
-            .content.lg
-                if isAuthor
-                    #edit.ui.right.floated.small.compact.button Edit
-                unless isAuthor
-                    #author.ui.right.floated.compact.disabled.button by #{author.username}
-                #clone.ui.right.floated.small.compact.button Clone
+            if isAuthor
+                #edit.ui.small.compact.button Edit
+            unless isAuthor
+                #author.ui.compact.disabled.button by #{author.username}
+            #clone.ui.small.compact.button Clone
 
 
 template(name='edit')
