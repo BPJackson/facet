@@ -1,5 +1,5 @@
 head
-    title Facet
+    title facet
     meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
     meta(name='mobile-web-app-capable', content='yes')
     meta(name='apple-mobile-web-app-capable', content='yes')
@@ -18,33 +18,38 @@ template(name='layout')
 
 template(name='nav')
     .ui.tertiary.right.aligned.segment
+        if selectedtags
+            #clear.ui.circular.icon.basic.button: i.remove.icon
         each selectedtags
-            #toggleOff.ui.active.compact.button #{this}
+            #toggleOff.ui.active.basic.compact.button #{this}
         select#mainfilter.ui.search.input.dropdown
             each tags
                 option(value=this.name) #{this.name}
         if currentUser
-            a#add.ui.button add
-        +loginButtons align='right'
+            a#add.ui.basic.compact.button add
+        .ui.label
+            +loginButtons align='right'
 
 template(name='home')
     each posts
-        .ui.segment.lg
+        .ui.segment.secondary
             +post
 
 template(name='post')
     if editing
         +edit
     else
-        each tags
-            .ui.compact.button.posttag(class=posttagclass) #{this}
+        .ui.two.column.centered.grid
+            .column
+                each tags
+                    .ui.compact.basic.button.posttag(class=posttagclass) #{this}
         .ui.hidden.divider
         .froala-view !{body}
         .ui.hidden.divider
         if currentUser
             if isAuthor
-                #edit.ui.button edit
-            #clone.ui.button clone
+                #edit.ui.basic.compact.button edit
+            #clone.ui.basic.compact.button clone
 
 template(name='edit')
     .content

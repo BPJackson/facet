@@ -13,31 +13,17 @@ if Meteor.isClient
 
 
     Template.nav.onCreated -> @autorun -> Meteor.subscribe 'tags', selectedtags.array()
-
-    Template.home.onCreated ->
-        @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
-        @subscribe 'people'
-
     Template.nav.onRendered ->
         self = @
         $('#mainfilter').dropdown
             allowAdditions: true
             duration: 0
             #placeholder: 'filter'
-            action: (text, value)-> selectedtags.push value
+            action: (text, value)-> selectedtags.push value.toLowerCase()
         Meteor.setTimeout ->
             $('.ui.dropdown').dropdown('show')
         , 300
         return
-
-    Template.home.helpers
-        posts: -> Posts.find {}
-        user: -> Meteor.user()
-
-    Template.post.helpers
-        editing: -> Session.equals 'editing', @_id
-        isAuthor: -> Meteor.userId() is @authorId
-        posttagclass: -> if @valueOf() in selectedtags.array() then 'active' else ''
 
     Template.nav.helpers
         tags: -> Tags.find()
@@ -57,6 +43,17 @@ if Meteor.isClient
         'click #toggleOff': ->
             selectedtags.remove @toString()
             $('.ui.dropdown').dropdown('show')
+
+        'click #clear': ->  selectedtags.clear()
+
+
+    Template.home.onCreated ->
+        @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
+        @subscribe 'people'
+    Template.home.helpers
+        posts: -> Posts.find {}
+        user: -> Meteor.user()
+
 
     Template.post.events
         'click #edit': (e,t)-> Session.set 'editing', @_id
@@ -93,6 +90,10 @@ if Meteor.isClient
             else
                 selectedtags.remove @toString()
                 $('.ui.dropdown').dropdown('show')
+    Template.post.helpers
+        editing: -> Session.equals 'editing', @_id
+        isAuthor: -> Meteor.userId() is @authorId
+        posttagclass: -> if @valueOf() in selectedtags.array() then 'active' else ''
 
     Template.edit.onRendered ->
         $('#tagselector').dropdown
@@ -137,6 +138,7 @@ if Meteor.isClient
                 ]
         return
 
+
 if Meteor.isServer
     Posts.allow
         insert: (userId, post)-> userId and post.authorId is userId
@@ -172,4 +174,4 @@ if Meteor.isServer
         if editing? then return Posts.find editing
         match = {}
         if selectedtags?.length > 0 then match.tags= $all: selectedtags else return null
-        return Posts.find match, limit: 10
+        return Posts.find match, limit: 1
