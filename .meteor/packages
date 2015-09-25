@@ -17,13 +17,6 @@ raix:handlebar-helpers
 fastclick
 froala:editor
 dburles:collection-helpers
-kadira:flow-router
-kadira:blaze-layout
-meteorhacks:kadira
-kadira:debug
-useraccounts:semantic-ui
-useraccounts:flow-routing
-datariot:ganalytics
 standard-minifiers
 meteor-base
 mobile-experience

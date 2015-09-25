@@ -6,27 +6,28 @@ head
     meta(name='apple-mobile-web-app-status-bar-style', content='black')
     meta(name='format-detection', content='telephone=no')
 
+body
+    +layout
+
 template(name='layout')
     .layout
         unless $.Session.get 'editing'
-            +Template.dynamic template=nav
-        +Template.dynamic template=content
+            +nav
+        .ui.container
+            +home
 
 template(name='nav')
     .ui.lg.right.aligned.segment
         each selectedtags
             #toggleOff.ui.active.compact.button #{this}
-        select#mainfilter.ui.search.input.simple.dropdown
+        select#mainfilter.ui.search.input.dropdown
             each tags
                 option(value=this.name) #{this.name}
     if currentUser
         .ui.inverted.borderless.bottom.fixed.menu
             .item #{user.username}
-            a#mine.item(class=mineclass) Mine
             unless $.Session.get 'editing'
                 a#add.item Add
-            .right.menu
-                a#logout.item Sign Out
 
 template(name='home')
     each posts
@@ -39,7 +40,9 @@ template(name='post')
     else
         each tags
             .ui.compact.button.postTag(class=postTagClass) #{this}
+        .ui.hidden.divider
         .froala-view !{body}
+        .ui.hidden.divider
         if currentUser
             if isAuthor
                 #edit.ui.small.compact.button Edit
@@ -59,5 +62,5 @@ template(name='edit')
                 textarea#editarea.bs #{body}
         .ui.hidden.divider
         .bottomGroup
-            #save.ui.button(class=saveclass) Save
+            #save.ui.button Save
             #delete.ui.right.floated.small.compact.button Delete
