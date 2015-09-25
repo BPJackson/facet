@@ -17,17 +17,15 @@ template(name='layout')
             +home
 
 template(name='nav')
-    .ui.lg.right.aligned.segment
+    .ui.tertiary.right.aligned.segment
         each selectedtags
             #toggleOff.ui.active.compact.button #{this}
         select#mainfilter.ui.search.input.dropdown
             each tags
                 option(value=this.name) #{this.name}
-    if currentUser
-        .ui.inverted.borderless.bottom.fixed.menu
-            .item #{user.username}
-            unless $.Session.get 'editing'
-                a#add.item Add
+        if currentUser
+            a#add.ui.button add
+        +loginButtons align='right'
 
 template(name='home')
     each posts
@@ -39,23 +37,20 @@ template(name='post')
         +edit
     else
         each tags
-            .ui.compact.button.postTag(class=postTagClass) #{this}
+            .ui.compact.button.posttag(class=posttagclass) #{this}
         .ui.hidden.divider
         .froala-view !{body}
         .ui.hidden.divider
         if currentUser
             if isAuthor
-                #edit.ui.small.compact.button Edit
-            unless isAuthor
-                #author.ui.compact.disabled.button by #{author.username}
-            #clone.ui.small.compact.button Clone
-
+                #edit.ui.button edit
+            #clone.ui.button clone
 
 template(name='edit')
     .content
         .ui.form
             .field
-                select#tagselector.ui.multiple.search.simple.dropdown(multiple='true')
+                select#tagselector.ui.multiple.search.dropdown(multiple='true')
                     each tags
                         option(value=this selected='selected') #{this}
             .field
