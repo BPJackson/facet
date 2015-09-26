@@ -7,12 +7,11 @@ Meteor.methods
 if Meteor.isClient
     selectedtags = new ReactiveArray []
     Session.setDefault 'editing', null
-
-    Accounts.ui.config
-        passwordSignupFields: 'USERNAME_ONLY'
+    Accounts.ui.config passwordSignupFields: 'USERNAME_ONLY'
 
 
-    Template.nav.onCreated -> @autorun -> Meteor.subscribe 'tags', selectedtags.array()
+    Template.nav.onCreated -> @autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'editing'
+
     Template.nav.onRendered ->
         self = @
         $('#mainfilter').dropdown
@@ -21,14 +20,19 @@ if Meteor.isClient
             #placeholder: 'filter'
             action: (text, value)-> selectedtags.push value.toLowerCase()
         Meteor.setTimeout ->
-            $('.ui.dropdown').dropdown('show')
+            $('.ui.search.dropdown').dropdown('show')
         , 300
         return
 
     Template.nav.helpers
         tags: -> Tags.find()
         selectedtags: -> selectedtags.list()
-        user: -> Meteor.user()
+
+    Template.posts.helpers posts: -> Posts.find {}
+
+    Template.posts.onCreated ->
+        @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
+        @subscribe 'people'
 
     Template.nav.events
         'click #add': ->
@@ -38,22 +42,15 @@ if Meteor.isClient
                 }
 
             Session.set 'editing', newId
-            selectedtags.clear()
+            #selectedtags.clear()
 
         'click #toggleOff': ->
             selectedtags.remove @toString()
-            $('.ui.dropdown').dropdown('show')
+            $('.ui.search.dropdown').dropdown('show')
 
-        'click #clear': ->  selectedtags.clear()
-
-
-    Template.home.onCreated ->
-        @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
-        @subscribe 'people'
-    Template.home.helpers
-        posts: -> Posts.find {}
-        user: -> Meteor.user()
-
+        'click #clear': ->
+            selectedtags.clear()
+            $('.ui.search.dropdown').dropdown('show')
 
     Template.post.events
         'click #edit': (e,t)-> Session.set 'editing', @_id
@@ -69,7 +66,7 @@ if Meteor.isClient
 
         'click #save': (e,t)->
             body = t.find('textarea').value
-            tags = $('.ui.dropdown').dropdown('get value')
+            tags = $('.ui.multiple.dropdown').dropdown('get value')
             tags_lower = tags.map (tag)-> tag.toLowerCase()
             Posts.update @_id, {$set: body: body, tags: tags_lower}, ->
             Session.set 'editing', null
@@ -77,67 +74,76 @@ if Meteor.isClient
             selectedtags.clear()
             tags_lower.forEach (tag)-> selectedtags.push tag
 
+        'click #cancel': ->
+            Session.set 'editing', null
+
         'click #delete': ->
             Meteor.call 'delete', @_id, ->
-            selectedtags.clear()
             Session.set 'editing', null
 
         'click .posttag': (e)->
             Session.set 'editing', null
             if @toString() not in selectedtags.array()
                 selectedtags.push @toString()
-                $('.ui.dropdown').dropdown('show')
+                $('.ui.search.dropdown').dropdown('show')
             else
                 selectedtags.remove @toString()
-                $('.ui.dropdown').dropdown('show')
+                $('.ui.search.dropdown').dropdown('show')
+
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
         isAuthor: -> Meteor.userId() is @authorId
         posttagclass: -> if @valueOf() in selectedtags.array() then 'active' else ''
 
+    Template.edit.helpers
+        config: ->
+            (editor) ->
+                editor.setTheme 'ace/theme/monokai'
+                editor.getSession().setMode 'ace/mode/javascript'
+                editor.setShowPrintMargin false
+                editor.getSession().setUseWrapMode true
+
     Template.edit.onRendered ->
         $('#tagselector').dropdown
             allowAdditions: true
-            placeholder: 'add tags'
+            #placeholder: 'add tags'
+            #onAdd: (val)-> selectedtags.push val.toLowerCase()
+            #onRemove: (val)-> selectedtags.remove val.toLowerCase()
+
+        ace = AceEditor.instance 'ace',
+            theme:'dawn'
+            mode:'html'
 
         $('#editarea').editable
             inlineMode: false
             minHeight: 100
             toolbarFixed: false
             buttons: [
-                'bold'
-                'italic'
-                'underline'
-                #'strikeThrough'
-                #'subscript'
-                #'superscript'
-                #'fontFamily'
-                #'fontSize'
-                #'color'
-                'formatBlock'
-                #'blockStyle'
-                #'inlineStyle'
-                'align'
-                'insertOrderedList'
-                'insertUnorderedList'
-                'outdent'
-                'indent'
-                #'selectAll'
-                'createLink'
-                'insertImage'
-                'insertVideo'
-                'table'
-                #'undo'
-                #'redo'
-                'html'
-                #'save'
-                #'insertHorizontalRule'
-                #'uploadFile'
-                #'removeFormat'
-                'fullscreen'
+                  'bold'
+                  'italic'
+                  'underline'
+                  'sep'
+                  'formatBlock'
+                  'sep'
+                  'align'
+                  'sep'
+                  'insertOrderedList'
+                  'insertUnorderedList'
+                  'sep'
+                  'outdent'
+                  'indent'
+                  'sep'
+                  'createLink'
+                  #'insertImage'
+                  'insertVideo'
+                  'sep'
+                  'table'
+                  'removeFormat'
+                  'html'
+                  'sep'
+                  'fullscreen'
                 ]
         return
-
 
 if Meteor.isServer
     Posts.allow
@@ -159,7 +165,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedtags }
             { $sort: count: -1, _id: 1 }
-            { $limit: 10 }
+            { $limit: 7 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
@@ -171,7 +177,5 @@ if Meteor.isServer
         self.ready()
 
     Meteor.publish 'posts', (selectedtags, editing)->
-        if editing? then return Posts.find editing
-        match = {}
-        if selectedtags?.length > 0 then match.tags= $all: selectedtags else return null
-        return Posts.find match, limit: 1
+        if editing? then Posts.find editing
+        else if selectedtags?.length > 0 then Posts.find {tags: $all: selectedtags}, limit: 1, sort: timestamp: 1 else null

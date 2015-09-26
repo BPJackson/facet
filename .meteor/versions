@@ -4,6 +4,7 @@ accounts-ui@1.1.6
 accounts-ui-unstyled@1.1.8
 aldeed:template-extension@3.4.3
 amplify@1.0.0
+arch:ace-editor@1.1.2
 autoupdate@1.2.3
 babel-compiler@5.8.24_1
 babel-runtime@0.1.4
