@@ -6,36 +6,35 @@ Meteor.methods
 
 if Meteor.isClient
     selectedtags = new ReactiveArray []
+
     Session.setDefault 'editing', null
+
     Accounts.ui.config passwordSignupFields: 'USERNAME_ONLY'
 
 
     Template.nav.onCreated -> @autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'editing'
 
-    Template.nav.onRendered ->
-        self = @
-        $('#mainfilter').dropdown
-            allowAdditions: true
-            duration: 0
+    #Template.nav.onRendered ->
+        #self = @
+        #$('#mainfilter').dropdown
+            #allowAdditions: true
+            #duration: 0
             #placeholder: 'filter'
-            action: (text, value)-> selectedtags.push value.toLowerCase()
-        Meteor.setTimeout ->
-            $('.ui.search.dropdown').dropdown('show')
-        , 300
-        return
+            #action: (text, value)-> selectedtags.push value.toLowerCase()
+        #Meteor.setTimeout ->
+            #$('.ui.search.dropdown').dropdown('show')
+        #, 300
+        #return
 
     Template.nav.helpers
+        dropdowntags: -> Tags.find {}, limit: 7
         tags: -> Tags.find()
         selectedtags: -> selectedtags.list()
 
-    Template.posts.helpers posts: -> Posts.find {}
-
-    Template.posts.onCreated ->
-        @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
-        @subscribe 'people'
-
     Template.nav.events
         'click #add': ->
+            Session.set 'adding', true
+
             tags = selectedtags.array()
             newId = Posts.insert {
                 authorId: Meteor.userId()
@@ -45,13 +44,23 @@ if Meteor.isClient
 
             Session.set 'editing', newId
 
+        'click .hometag': -> selectedtags.push @name.toString()
+
         'click #toggleOff': ->
             selectedtags.remove @toString()
-            $('.ui.search.dropdown').dropdown('show')
+            #$('.ui.search.dropdown').dropdown('show')
 
         'click #clear': ->
             selectedtags.clear()
-            $('.ui.search.dropdown').dropdown('show')
+            #$('.ui.search.dropdown').dropdown('show')
+
+
+    Template.posts.onCreated ->
+        @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
+        @subscribe 'people'
+
+    Template.posts.helpers posts: -> Posts.find {}
+
 
     Template.post.events
         'click #edit': (e,t)-> Session.set 'editing', @_id
@@ -66,18 +75,23 @@ if Meteor.isClient
             Session.set 'editing', cloneId
 
         'click #save': (e,t)->
+            if Session.equals 'adding', true then Session.set 'adding', false
             body = t.find('#codebody').value
+            #body = t.find('#editarea').value
+
             tags = $('.ui.multiple.dropdown').dropdown('get value')
             tagcount = tags.length
 
-            tags_lower = tags.map (tag)-> tag.toLowerCase()
-            Posts.update @_id, {$set: body: body, tags: tags_lower, tagcount: tagcount}, ->
+            loweredtags = tags.map (tag)-> tag.toLowerCase()
+
+            Posts.update @_id, {$set: body: body, tags: loweredtags, tagcount: tagcount}, ->
             Session.set 'editing', null
 
             selectedtags.clear()
-            tags_lower.forEach (tag)-> selectedtags.push tag
+            loweredtags.forEach (tag)-> selectedtags.push tag
 
         'click #cancel': ->
+            if Session.equals 'adding', true then Session.set 'adding', false
             Session.set 'editing', null
 
         'click #delete': ->
@@ -88,62 +102,39 @@ if Meteor.isClient
             Session.set 'editing', null
             if @toString() not in selectedtags.array()
                 selectedtags.push @toString()
-                $('.ui.search.dropdown').dropdown('show')
+                #$('.ui.search.dropdown').dropdown('show')
             else
                 selectedtags.remove @toString()
-                $('.ui.search.dropdown').dropdown('show')
+                #$('.ui.search.dropdown').dropdown('show')
 
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
         isAuthor: -> Meteor.userId() is @authorId
         posttagclass: -> if @valueOf() in selectedtags.array() then 'active' else ''
 
+
     Template.edit.helpers
         editorOptions: ->
             {
                 lineNumbers: true
-                mode: 'javascript'
+                mode: 'gfm'
+                indentBlock: 4
             }
-
-        postbody: -> @body
 
     Template.edit.onRendered ->
         $('#tagselector').dropdown
             allowAdditions: true
-            #placeholder: 'add tags'
+            placeholder: 'press enter after each tag'
             #onAdd: (val)-> selectedtags.push val.toLowerCase()
             #onRemove: (val)-> selectedtags.remove val.toLowerCase()
-
-        $('#editarea').editable
-            inlineMode: false
-            minHeight: 100
-            toolbarFixed: false
-            buttons: [
-                'bold'
-                'italic'
-                'underline'
-                'sep'
-                'formatBlock'
-                'sep'
-                'align'
-                'sep'
-                'insertOrderedList'
-                'insertUnorderedList'
-                'sep'
-                'outdent'
-                'indent'
-                'sep'
-                'createLink'
-                #'insertImage'
-                'insertVideo'
-                'sep'
-                'table'
-                'removeFormat'
-                'html'
-                'sep'
-                'fullscreen'
-                ]
         return
+
+
+    Template.home.helpers
+
+    Template.home.events
+
+
 
 if Meteor.isServer
     Posts.allow
@@ -165,7 +156,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedtags }
             { $sort: count: -1, _id: 1 }
-            { $limit: 7 }
+            { $limit: 20 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
@@ -179,3 +170,4 @@ if Meteor.isServer
     Meteor.publish 'posts', (selectedtags, editing)->
         if editing? then Posts.find editing
         else if selectedtags?.length > 0 then Posts.find {tags: $all: selectedtags}, limit: 1, sort: tagcount: 1 else null
+        #else if selectedtags?.length > 0 then Posts.find {tags: $in: selectedtags}, limit: 1, sort: tagcount: 1 else null

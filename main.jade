@@ -34,17 +34,19 @@ body
 
 template(name='nav')
     .ui.secondary.right.aligned.segment
+        each selectedtags
+            #toggleOff.ui.active.basic.button #{this}
         if selectedtags
             #clear.ui.circular.icon.basic.button: i.remove.icon
-        each selectedtags
-            #toggleOff.ui.active.basic.compact.button #{this}
-        select#mainfilter.ui.search.input.dropdown
-            each tags
-                option(value=this.name)
-                    |#{this.name}
-                    small #{this.count}
+        each tags
+            .ui.compact.basic.button.hometag #{this.name}
+        // select#mainfilter.ui.search.input.dropdown
+        //     each dropdowntags
+        //         option(value=this.name)
+        //             |#{this.name}
+        //             small #{this.count}
         if currentUser
-            a#add.ui.basic.compact.button add
+            a#add.ui.basic.icon.button: i.plus.icon
         .ui.label
             +loginButtons align='right'
 
@@ -62,7 +64,8 @@ template(name='post')
                 each tags
                     .ui.compact.basic.button.posttag(class=posttagclass) #{this}
         .ui.hidden.divider
-        .froala-view !{body}
+        +markdown
+            #{body}
         .ui.hidden.divider
         if currentUser
             if isAuthor
@@ -77,10 +80,19 @@ template(name='edit')
                     each tags
                         option(value=this selected='selected') #{this}
             .field
-                +CodeMirror id="codebody" name="codemirror" options=editorOptions code=postbody reactiveVar="varName"
-                // textarea#editarea.bs #{body}
+                +CodeMirror id="codebody" name="codemirror" options=editorOptions code=body
         .ui.hidden.divider
         .bottomGroup
             #save.ui.green.button save
-            #cancel.ui.small.compact.button cancel
-            #delete.ui.right.floated.small.compact.button delete
+            unless $.Session.get 'adding'
+                #cancel.ui.small.compact.button cancel
+            #delete.ui.right.floated.small.compact.button
+                if $.Session.get 'adding'
+                    |cancel
+                else
+                    |delete
+
+
+template(name='home')
+    each tags
+        .ui.button.hometag #{this.name}
