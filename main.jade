@@ -71,14 +71,14 @@ template(name='post')
 
 template(name='edit')
     .content
-        // pre#ace
         .ui.form
             .field
                 select#tagselector.ui.multiple.search.dropdown(multiple='true')
                     each tags
                         option(value=this selected='selected') #{this}
             .field
-                textarea#editarea.bs #{body}
+                +CodeMirror id="codebody" name="codemirror" options=editorOptions code=postbody reactiveVar="varName"
+                // textarea#editarea.bs #{body}
         .ui.hidden.divider
         .bottomGroup
             #save.ui.green.button save

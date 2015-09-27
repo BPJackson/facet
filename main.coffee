@@ -44,7 +44,6 @@ if Meteor.isClient
                 }
 
             Session.set 'editing', newId
-            #selectedtags.clear()
 
         'click #toggleOff': ->
             selectedtags.remove @toString()
@@ -67,7 +66,7 @@ if Meteor.isClient
             Session.set 'editing', cloneId
 
         'click #save': (e,t)->
-            body = t.find('textarea').value
+            body = t.find('#codebody').value
             tags = $('.ui.multiple.dropdown').dropdown('get value')
             tagcount = tags.length
 
@@ -100,7 +99,13 @@ if Meteor.isClient
         posttagclass: -> if @valueOf() in selectedtags.array() then 'active' else ''
 
     Template.edit.helpers
+        editorOptions: ->
+            {
+                lineNumbers: true
+                mode: 'javascript'
+            }
 
+        postbody: -> @body
 
     Template.edit.onRendered ->
         $('#tagselector').dropdown
