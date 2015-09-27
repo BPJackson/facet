@@ -67,8 +67,10 @@ if Meteor.isClient
         'click #save': (e,t)->
             body = t.find('textarea').value
             tags = $('.ui.multiple.dropdown').dropdown('get value')
+            tagcount = tags.length
+
             tags_lower = tags.map (tag)-> tag.toLowerCase()
-            Posts.update @_id, {$set: body: body, tags: tags_lower}, ->
+            Posts.update @_id, {$set: body: body, tags: tags_lower, tagcount: tagcount}, ->
             Session.set 'editing', null
 
             selectedtags.clear()
@@ -178,4 +180,4 @@ if Meteor.isServer
 
     Meteor.publish 'posts', (selectedtags, editing)->
         if editing? then Posts.find editing
-        else if selectedtags?.length > 0 then Posts.find {tags: $all: selectedtags}, limit: 1, sort: timestamp: 1 else null
+        else if selectedtags?.length > 0 then Posts.find {tags: $all: selectedtags}, limit: 1, sort: tagcount: 1 else null
