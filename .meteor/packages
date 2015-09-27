@@ -14,7 +14,6 @@ accounts-password
 mquandalle:stylus
 raix:handlebar-helpers
 fastclick
-froala:editor
 dburles:collection-helpers
 standard-minifiers
 meteor-base
@@ -37,6 +36,4 @@ constellation:plugins
 constellation:position
 constellation:autopublish
 constellation:session
-yelongren:constellation-reload
-fermuch:stats.js
 perak:markdown

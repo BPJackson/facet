@@ -37,10 +37,7 @@ ecmascript-collections@0.1.6
 ejson@1.0.7
 email@1.0.7
 fastclick@1.0.7
-fermuch:stats.js@0.0.1
 flemay:less-autoprefixer@1.1.0
-fortawesome:fontawesome@4.4.0
-froala:editor@1.2.8
 geojson-utils@1.0.4
 gwendall:session-json@0.1.7
 hot-code-push@1.0.0
@@ -102,4 +99,3 @@ underscore@1.0.4
 url@1.0.5
 webapp@1.2.2
 webapp-hashing@1.0.5
-yelongren:constellation-reload@0.1.0

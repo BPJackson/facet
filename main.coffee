@@ -14,32 +14,26 @@ if Meteor.isClient
 
     Template.nav.onCreated -> @autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'editing'
 
-    #Template.nav.onRendered ->
-        #self = @
-        #$('#mainfilter').dropdown
-            #allowAdditions: true
-            #duration: 0
-            #placeholder: 'filter'
-            #action: (text, value)-> selectedtags.push value.toLowerCase()
-        #Meteor.setTimeout ->
-            #$('.ui.search.dropdown').dropdown('show')
-        #, 300
-        #return
-
     Template.nav.helpers
         dropdowntags: -> Tags.find {}, limit: 7
         tags: -> Tags.find()
         selectedtags: -> selectedtags.list()
 
+    Template.posts.onCreated ->
+        @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
+        @subscribe 'people'
+
+    Template.posts.helpers posts: -> Posts.find {}
+
     Template.nav.events
         'click #add': ->
             Session.set 'adding', true
 
-            tags = selectedtags.array()
+            #tags = selectedtags.array()
             newId = Posts.insert {
                 authorId: Meteor.userId()
                 timestamp: Date.now()
-                tags: tags
+                #tags: tags
                 }
 
             Session.set 'editing', newId
@@ -53,13 +47,6 @@ if Meteor.isClient
         'click #clear': ->
             selectedtags.clear()
             #$('.ui.search.dropdown').dropdown('show')
-
-
-    Template.posts.onCreated ->
-        @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
-        @subscribe 'people'
-
-    Template.posts.helpers posts: -> Posts.find {}
 
 
     Template.post.events
@@ -109,7 +96,7 @@ if Meteor.isClient
 
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
-        isAuthor: -> Meteor.userId() is @authorId
+        isAuthor: -> Meteor.userId() and Meteor.userId() is @authorId
         posttagclass: -> if @valueOf() in selectedtags.array() then 'active' else ''
 
 
@@ -119,6 +106,7 @@ if Meteor.isClient
                 lineNumbers: true
                 mode: 'gfm'
                 indentBlock: 4
+                lineWrapping: true
             }
 
     Template.edit.onRendered ->
@@ -128,13 +116,6 @@ if Meteor.isClient
             #onAdd: (val)-> selectedtags.push val.toLowerCase()
             #onRemove: (val)-> selectedtags.remove val.toLowerCase()
         return
-
-
-    Template.home.helpers
-
-    Template.home.events
-
-
 
 if Meteor.isServer
     Posts.allow

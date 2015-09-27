@@ -33,22 +33,17 @@ body
         +posts
 
 template(name='nav')
-    .ui.secondary.right.aligned.segment
+    .ui.secondary.segment
+        if currentUser
+            a#add.ui.basic.small.compact.icon.button: i.plus.icon
+        .ui.label
+            +loginButtons
+        if selectedtags
+            #clear.ui.circular.active.icon.basic.button: i.remove.icon
         each selectedtags
             #toggleOff.ui.active.basic.button #{this}
-        if selectedtags
-            #clear.ui.circular.icon.basic.button: i.remove.icon
         each tags
             .ui.compact.basic.button.hometag #{this.name}
-        // select#mainfilter.ui.search.input.dropdown
-        //     each dropdowntags
-        //         option(value=this.name)
-        //             |#{this.name}
-        //             small #{this.count}
-        if currentUser
-            a#add.ui.basic.icon.button: i.plus.icon
-        .ui.label
-            +loginButtons align='right'
 
 template(name='posts')
     each posts
@@ -59,18 +54,13 @@ template(name='post')
     if editing
         +edit
     else
-        .ui.two.column.centered.grid
-            .column
-                each tags
-                    .ui.compact.basic.button.posttag(class=posttagclass) #{this}
+        if isAuthor
+            a#edit.ui.right.corner.label: i.edit.icon
+        each tags
+            .ui.compact.basic.button.posttag(class=posttagclass) #{this}
         .ui.hidden.divider
         +markdown
             #{body}
-        .ui.hidden.divider
-        if currentUser
-            if isAuthor
-                #edit.ui.basic.compact.button edit
-            #clone.ui.basic.compact.button clone
 
 template(name='edit')
     .content
@@ -83,16 +73,11 @@ template(name='edit')
                 +CodeMirror id="codebody" name="codemirror" options=editorOptions code=body
         .ui.hidden.divider
         .bottomGroup
-            #save.ui.green.button save
+            #save.ui.basic.button save
             unless $.Session.get 'adding'
-                #cancel.ui.small.compact.button cancel
-            #delete.ui.right.floated.small.compact.button
+                #cancel.ui.small.basic.compact.button cancel
+            #delete.ui.right.floated.small.basic.compact.button
                 if $.Session.get 'adding'
                     |cancel
                 else
                     |delete
-
-
-template(name='home')
-    each tags
-        .ui.button.hometag #{this.name}
