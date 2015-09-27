@@ -36,9 +36,11 @@ if Meteor.isClient
 
     Template.nav.events
         'click #add': ->
+            tags = selectedtags.array()
             newId = Posts.insert {
                 authorId: Meteor.userId()
                 timestamp: Date.now()
+                tags: tags
                 }
 
             Session.set 'editing', newId
@@ -98,12 +100,7 @@ if Meteor.isClient
         posttagclass: -> if @valueOf() in selectedtags.array() then 'active' else ''
 
     Template.edit.helpers
-        config: ->
-            (editor) ->
-                editor.setTheme 'ace/theme/monokai'
-                editor.getSession().setMode 'ace/mode/javascript'
-                editor.setShowPrintMargin false
-                editor.getSession().setUseWrapMode true
+
 
     Template.edit.onRendered ->
         $('#tagselector').dropdown
@@ -112,38 +109,34 @@ if Meteor.isClient
             #onAdd: (val)-> selectedtags.push val.toLowerCase()
             #onRemove: (val)-> selectedtags.remove val.toLowerCase()
 
-        ace = AceEditor.instance 'ace',
-            theme:'dawn'
-            mode:'html'
-
         $('#editarea').editable
             inlineMode: false
             minHeight: 100
             toolbarFixed: false
             buttons: [
-                  'bold'
-                  'italic'
-                  'underline'
-                  'sep'
-                  'formatBlock'
-                  'sep'
-                  'align'
-                  'sep'
-                  'insertOrderedList'
-                  'insertUnorderedList'
-                  'sep'
-                  'outdent'
-                  'indent'
-                  'sep'
-                  'createLink'
-                  #'insertImage'
-                  'insertVideo'
-                  'sep'
-                  'table'
-                  'removeFormat'
-                  'html'
-                  'sep'
-                  'fullscreen'
+                'bold'
+                'italic'
+                'underline'
+                'sep'
+                'formatBlock'
+                'sep'
+                'align'
+                'sep'
+                'insertOrderedList'
+                'insertUnorderedList'
+                'sep'
+                'outdent'
+                'indent'
+                'sep'
+                'createLink'
+                #'insertImage'
+                'insertVideo'
+                'sep'
+                'table'
+                'removeFormat'
+                'html'
+                'sep'
+                'fullscreen'
                 ]
         return
 
