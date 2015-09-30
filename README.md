@@ -1,7 +1,7 @@
 # facet
 tag based navigation
 
-
+---
 The MIT License (MIT)
 
 Copyright (c) 2015 Eric Jackson
