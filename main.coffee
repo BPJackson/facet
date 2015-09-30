@@ -15,20 +15,13 @@ if Meteor.isClient
     Template.nav.onCreated -> @autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'editing'
 
     Template.nav.helpers
-        dropdowntags: -> Tags.find {}, limit: 7
-        tags: -> Tags.find()
+        hundredtags: -> Tags.find {}, limit: 100
         selectedtags: -> selectedtags.list()
         settings: ->
                {
                 position: 'bottom'
                 limit: 5
                 rules: [
-                    {
-                        token: '@'
-                        collection: Meteor.users
-                        field: 'username'
-                        template: Template.userPill
-                    }
                     {
                         collection: Tags
                         field: 'name'
@@ -43,6 +36,10 @@ if Meteor.isClient
     Template.posts.helpers posts: -> Posts.find {}
 
     Template.nav.events
+        "autocompleteselect input": (event, template, doc)->
+            selectedtags.push doc.name.toString()
+            $('input').val('')
+
         'click #add': ->
             Session.set 'adding', true
 
@@ -55,15 +52,14 @@ if Meteor.isClient
 
             Session.set 'editing', newId
 
-        'click .hometag': -> selectedtags.push @name.toString()
+        'click .hometag': ->
+            selectedtags.push @name.toString()
 
         'click #toggleOff': ->
             selectedtags.remove @toString()
-            #$('.ui.search.dropdown').dropdown('show')
 
         'click #clear': ->
             selectedtags.clear()
-            #$('.ui.search.dropdown').dropdown('show')
 
 
     Template.post.events
@@ -106,10 +102,8 @@ if Meteor.isClient
             Session.set 'editing', null
             if @toString() not in selectedtags.array()
                 selectedtags.push @toString()
-                #$('.ui.search.dropdown').dropdown('show')
             else
                 selectedtags.remove @toString()
-                #$('.ui.search.dropdown').dropdown('show')
 
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
