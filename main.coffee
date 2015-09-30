@@ -46,7 +46,6 @@ if Meteor.isClient
             code = event.which
             if code is 13
                 val = $('#search').val()
-                console.log val
                 if val is 'clear'
                     selectedtags.clear()
                     $('#search').val('')

@@ -39,7 +39,7 @@ template(name='nav')
         .ui.label
             +loginButtons
         .ui.input
-            +inputAutocomplete settings=settings id="search" class="" placeholder="search"
+            +inputAutocomplete settings=settings id="search" class='' autofocus=''
         if selectedtags
             #clear.ui.circular.active.icon.basic.button: i.remove.icon
         each selectedtags
@@ -85,9 +85,6 @@ template(name='edit')
                     |cancel
                 else
                     |delete
-
-template(name='userPill')
-    .ui.label #{username}
 
 template(name='tagresult')
     .ui.label #{name} #{count}
