@@ -17,7 +17,6 @@ fastclick
 dburles:collection-helpers
 standard-minifiers
 meteor-base
-mobile-experience
 mongo
 blaze-html-templates
 session
@@ -38,3 +37,4 @@ constellation:autopublish
 constellation:session
 perak:markdown
 mizzao:autocomplete
+mizzao:jquery-ui

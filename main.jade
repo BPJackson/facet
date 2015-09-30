@@ -38,13 +38,15 @@ template(name='nav')
             a#add.ui.basic.icon.circular.button: i.plus.icon
         .ui.label
             +loginButtons
-        +inputAutocomplete settings=settings id="msg" class="ui input" placeholder="Search"
+        .ui.input
+            +inputAutocomplete settings=settings id="search" class="" placeholder="search"
         if selectedtags
             #clear.ui.circular.active.icon.basic.button: i.remove.icon
         each selectedtags
             #toggleOff.ui.active.basic.large.button #{this}
-        each hundredtags
-            .ui.basic.button.hometag #{this.name}
+        .taggies
+            each hundredtags
+                .ui.basic.button.hometag #{this.name}
 
 template(name='posts')
     each posts

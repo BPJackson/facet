@@ -11,8 +11,10 @@ if Meteor.isClient
 
     Accounts.ui.config passwordSignupFields: 'USERNAME_ONLY'
 
-
     Template.nav.onCreated -> @autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'editing'
+
+    #Template.nav.onRendered ->
+        #AnimatedEach.attachHooks( this.find(".taggies"))
 
     Template.nav.helpers
         hundredtags: -> Tags.find {}, limit: 100
@@ -36,9 +38,19 @@ if Meteor.isClient
     Template.posts.helpers posts: -> Posts.find {}
 
     Template.nav.events
-        "autocompleteselect input": (event, template, doc)->
+        'autocompleteselect input': (event, template, doc)->
             selectedtags.push doc.name.toString()
             $('input').val('')
+
+        'keyup #search': (event, template)->
+            code = event.which
+            if code is 13
+                val = $('#search').val()
+                console.log val
+                if val is 'clear'
+                    selectedtags.clear()
+                    $('#search').val('')
+            false
 
         'click #add': ->
             Session.set 'adding', true
@@ -164,4 +176,4 @@ if Meteor.isServer
     Meteor.publish 'posts', (selectedtags, editing)->
         if editing? then Posts.find editing
         #else if selectedtags?.length > 0 then Posts.find {tags: $all: selectedtags}, limit: 1, sort: tagcount: 1 else null
-        else Posts.find {tags: $all: selectedtags}, sort: tagcount: 1
+        else Posts.find {tags: $all: selectedtags}, limit: 10, sort: tagcount: 1

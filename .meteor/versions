@@ -48,7 +48,6 @@ http@1.1.1
 id-map@1.0.4
 jquery@1.11.4
 lai:collection-extensions@0.1.4
-launch-screen@1.0.4
 less@2.5.0_3
 livedata@1.0.15
 localstorage@1.0.5
@@ -61,8 +60,8 @@ meteorhacks:collection-utils@1.2.0
 minifiers@1.1.7
 minimongo@1.0.10
 mizzao:autocomplete@0.5.1
-mobile-experience@1.0.1
-mobile-status-bar@1.0.6
+mizzao:build-fetcher@0.2.0
+mizzao:jquery-ui@1.11.4
 mongo@1.1.2
 mongo-id@1.0.1
 mongo-livedata@1.0.9
