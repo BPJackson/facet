@@ -46,7 +46,9 @@ template(name='nav')
             #toggleOff.ui.active.basic.large.button #{this}
         .taggies
             each hundredtags
-                .ui.basic.button.hometag #{this.name}
+                .ui.basic.button.hometag
+                    |#{this.name}
+                    small #{this.count}
 
 template(name='posts')
     each posts
