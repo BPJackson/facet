@@ -18,7 +18,24 @@ if Meteor.isClient
         dropdowntags: -> Tags.find {}, limit: 7
         tags: -> Tags.find()
         selectedtags: -> selectedtags.list()
-
+        settings: ->
+               {
+                position: 'bottom'
+                limit: 5
+                rules: [
+                    {
+                        token: '@'
+                        collection: Meteor.users
+                        field: 'username'
+                        template: Template.userPill
+                    }
+                    {
+                        collection: Tags
+                        field: 'name'
+                        template: Template.tagresult
+                    }
+                ]
+               }
     Template.posts.onCreated ->
         @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
         @subscribe 'people'
@@ -29,11 +46,11 @@ if Meteor.isClient
         'click #add': ->
             Session.set 'adding', true
 
-            #tags = selectedtags.array()
+            tags = selectedtags.array()
             newId = Posts.insert {
                 authorId: Meteor.userId()
                 timestamp: Date.now()
-                #tags: tags
+                tags: tags
                 }
 
             Session.set 'editing', newId
@@ -104,9 +121,11 @@ if Meteor.isClient
         editorOptions: ->
             {
                 lineNumbers: true
+                keymap: 'sublime'
                 mode: 'gfm'
                 indentBlock: 4
                 lineWrapping: true
+                viewportMargin: Infinity
             }
 
     Template.edit.onRendered ->
@@ -137,7 +156,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedtags }
             { $sort: count: -1, _id: 1 }
-            { $limit: 20 }
+            { $limit: 100 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
@@ -150,5 +169,5 @@ if Meteor.isServer
 
     Meteor.publish 'posts', (selectedtags, editing)->
         if editing? then Posts.find editing
-        else if selectedtags?.length > 0 then Posts.find {tags: $all: selectedtags}, limit: 1, sort: tagcount: 1 else null
-        #else if selectedtags?.length > 0 then Posts.find {tags: $in: selectedtags}, limit: 1, sort: tagcount: 1 else null
+        #else if selectedtags?.length > 0 then Posts.find {tags: $all: selectedtags}, limit: 1, sort: tagcount: 1 else null
+        else Posts.find {tags: $all: selectedtags}, sort: tagcount: 1

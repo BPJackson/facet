@@ -35,15 +35,16 @@ body
 template(name='nav')
     .ui.secondary.segment
         if currentUser
-            a#add.ui.basic.small.compact.icon.button: i.plus.icon
+            a#add.ui.basic.icon.circular.button: i.plus.icon
         .ui.label
             +loginButtons
+        +inputAutocomplete settings=settings id="msg" class="ui input" placeholder="Search"
         if selectedtags
             #clear.ui.circular.active.icon.basic.button: i.remove.icon
         each selectedtags
-            #toggleOff.ui.active.basic.button #{this}
+            #toggleOff.ui.active.basic.large.button #{this}
         each tags
-            .ui.compact.basic.button.hometag #{this.name}
+            .ui.basic.button.hometag #{this.name}
 
 template(name='posts')
     each posts
@@ -55,12 +56,13 @@ template(name='post')
         +edit
     else
         if isAuthor
-            a#edit.ui.right.corner.label: i.edit.icon
+            a#edit.ui.basic.icon.circular.button: i.edit.icon
         each tags
             .ui.compact.basic.button.posttag(class=posttagclass) #{this}
-        .ui.hidden.divider
+        .ui.hidden.fitted.divider
         +markdown
             #{body}
+        // .ui.hidden.divider
 
 template(name='edit')
     .content
@@ -81,3 +83,9 @@ template(name='edit')
                     |cancel
                 else
                     |delete
+
+template(name='userPill')
+    .ui.label #{username}
+
+template(name='tagresult')
+    .ui.label #{name} #{count}
