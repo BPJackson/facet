@@ -1,5 +1,5 @@
-# facet
-explores the idea of an infinite tag cloud
+# Facet
+Explores the idea of an infinite tag cloud
 
 feedback is welcome.
 
