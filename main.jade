@@ -33,33 +33,34 @@ body
         +posts
 
 template(name='nav')
-    .ui.menu
+    .ui.inverted.attached.menu
         a#home.ui.item Facet
-        .ui.input
-            +inputAutocomplete settings=settings id='search' class='' placeholder='search...' autofocus=''
+        .item
+            .ui.input
+                +inputAutocomplete settings=settings id='search' class='' placeholder="search (or 'clear','mine')" autofocus=''
         .right.menu
             if currentUser
-                a#mine.ui.item My Posts
                 a#add.ui.item
                     i.plus.icon
                     |Add
+                a#mine.ui.item Mine
             .ui.item
-                +loginButtons
-    .ui.secondary.segment
+                +loginButtons align='right'
+    .ui.secondary.attached.segment
         if somethingSelected
-            #clear.ui.circular.active.icon.basic.button
+            #clear.ui.circular.active.icon.button
                 i.remove.icon
-                |Clear Selection
+                // |Clear
         each selectedAuthor
-            .unselectAuthor.ui.basic.large.button
+            .unselectAuthor.ui.active.large.button
                 i.user.icon
                 strong #{this}
         each selectedTags
-            .toggleOff.ui.active.basic.large.button #{this}
-        each hundredtags
-            .ui.basic.button.hometag
+            .toggleOff.ui.active.large.button #{this}
+        each displayedtags
+            .ui.button.hometag
                 |#{this.name}
-                small #{this.count}
+                // small #{this.count}
 
 template(name='posts')
     each posts
@@ -71,15 +72,16 @@ template(name='post')
         +edit
     else
         each tags
-            .ui.compact.basic.button.posttag(class=posttagclass) #{this}
-        |by
+            .ui.compact.button.posttag(class=posttagclass) #{this}
         if isAuthor
-            |  Me
-            a#edit.ui.basic.icon.circular.button
+            | by Me
+            a#edit.ui.icon.circular.button
                 i.edit.icon
-                |Edit This
+                |Edit
         else
-            .author.ui.compact.button #{author.username}
+            .author.ui.compact.button(class=authorButtonClass)
+                i.user.icon
+                |by #{author.username}
         .ui.hidden.fitted.divider
         +markdown
             #{body}
@@ -88,21 +90,21 @@ template(name='edit')
     .content
         .ui.form
             .field
-                select#tagselector.ui.multiple.search.dropdown(multiple='true')
+                select#tagselector.ui.multiple.search.dropdown(multiple='true' autofocus='')
                     each tags
                         option(value=this selected='selected') #{this}
             .field
                 +CodeMirror id='codebody' name='codemirror' options=editorOptions code=body
         .ui.hidden.divider
         .bottomGroup
-            #save.ui.basic.button save
+            #save.ui.button Save
             unless $.Session.get 'adding'
-                #cancel.ui.small.basic.compact.button cancel
-            #delete.ui.right.floated.small.basic.compact.button
+                #cancel.ui.small.compact.button cancel
+            #delete.ui.right.floated.small.compact.button
                 if $.Session.get 'adding'
-                    |cancel
+                    |Cancel
                 else
-                    |delete
+                    |Delete
 
 template(name='tagresult')
-    .ui.label #{name} #{count}
+    .ui.large.label #{name} #{count}

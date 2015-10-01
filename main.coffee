@@ -22,7 +22,7 @@ if Meteor.isClient
         @subscribe 'people'
 
     Template.nav.helpers
-        hundredtags: -> Tags.find {}, limit: 100
+        displayedtags: -> Tags.find {}, limit: 20
         somethingSelected: -> selectedTags.list() or selectedAuthor.list()
         selectedTags: -> selectedTags.list()
         selectedAuthor: -> selectedAuthor.list()
@@ -50,9 +50,29 @@ if Meteor.isClient
             code = event.which
             if code is 13
                 val = $('#search').val()
-                if val is 'clear'
-                    selectedTags.clear()
-                    $('#search').val('')
+                switch val
+                    when 'clear'
+                        selectedTags.clear()
+                        selectedAuthor.clear()
+                        $('#search').val('')
+                    when 'add'
+                        Session.set 'adding', true
+                        tags = selectedTags.array()
+                        newId = Posts.insert {
+                            authorId: Meteor.userId()
+                            timestamp: Date.now()
+                            tags: tags
+                            }
+                        Session.set 'editing', newId
+                        $('#search').val('')
+                    when 'mine'
+                        if Meteor.user().username not in selectedAuthor.array()
+                            selectedAuthor.push Meteor.user().username
+                            $('#search').val('')
+                    when 'logout'
+                        Meteor.logout()
+                        $('#search').val('')
+
             false
 
         'click #mine': -> if Meteor.user().username not in selectedAuthor.array() then selectedAuthor.push Meteor.user().username
@@ -79,6 +99,8 @@ if Meteor.isClient
         'click #clear, click #home': ->
             selectedTags.clear()
             selectedAuthor.clear()
+            $('input').val('')
+
 
     Template.post.events
         'click #edit': (e,t)-> Session.set 'editing', @_id
@@ -128,7 +150,8 @@ if Meteor.isClient
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
         isAuthor: -> Meteor.userId() and Meteor.userId() is @authorId
-        posttagclass: -> if @valueOf() in selectedTags.array() then 'active' else ''
+        posttagclass: -> if @valueOf() in selectedTags.array() then 'active large' else ''
+        authorButtonClass: -> if @author().username in selectedAuthor.array() then 'large active' else ''
 
 
     Template.edit.helpers
