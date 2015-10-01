@@ -4,21 +4,28 @@
 Meteor.methods
     delete: (postId)-> Posts.remove postId
 
+Posts.helpers
+    author: (doc)-> Meteor.users.findOne @authorId
+
 if Meteor.isClient
-    selectedtags = new ReactiveArray []
+    selectedTags = new ReactiveArray []
+    selectedAuthor = new ReactiveArray []
 
     Session.setDefault 'editing', null
 
     Accounts.ui.config passwordSignupFields: 'USERNAME_ONLY'
 
-    Template.nav.onCreated -> @autorun -> Meteor.subscribe 'tags', selectedtags.array(), Session.get 'editing'
+    Template.nav.onCreated -> @autorun -> Meteor.subscribe 'tags', selectedTags.array(), selectedAuthor.array(), Session.get 'editing'
 
-    #Template.nav.onRendered ->
-        #AnimatedEach.attachHooks( this.find(".taggies"))
+    Template.posts.onCreated ->
+        @autorun -> Meteor.subscribe 'posts', selectedTags.array(), selectedAuthor.array(), Session.get('editing')
+        @subscribe 'people'
 
     Template.nav.helpers
         hundredtags: -> Tags.find {}, limit: 100
-        selectedtags: -> selectedtags.list()
+        somethingSelected: -> selectedTags.list() or selectedAuthor.list()
+        selectedTags: -> selectedTags.list()
+        selectedAuthor: -> selectedAuthor.list()
         settings: ->
                {
                 position: 'bottom'
@@ -31,15 +38,12 @@ if Meteor.isClient
                     }
                 ]
                }
-    Template.posts.onCreated ->
-        @autorun -> Meteor.subscribe 'posts', selectedtags.array(), Session.get('editing')
-        @subscribe 'people'
 
     Template.posts.helpers posts: -> Posts.find {}
 
     Template.nav.events
         'autocompleteselect input': (event, template, doc)->
-            selectedtags.push doc.name.toString()
+            selectedTags.push doc.name.toString()
             $('input').val('')
 
         'keyup #search': (event, template)->
@@ -47,14 +51,17 @@ if Meteor.isClient
             if code is 13
                 val = $('#search').val()
                 if val is 'clear'
-                    selectedtags.clear()
+                    selectedTags.clear()
                     $('#search').val('')
             false
+
+        'click #mine': -> if Meteor.user().username not in selectedAuthor.array() then selectedAuthor.push Meteor.user().username
+
 
         'click #add': ->
             Session.set 'adding', true
 
-            tags = selectedtags.array()
+            tags = selectedTags.array()
             newId = Posts.insert {
                 authorId: Meteor.userId()
                 timestamp: Date.now()
@@ -63,15 +70,15 @@ if Meteor.isClient
 
             Session.set 'editing', newId
 
-        'click .hometag': ->
-            selectedtags.push @name.toString()
+        'click .hometag': -> selectedTags.push @name.toString()
 
-        'click #toggleOff': ->
-            selectedtags.remove @toString()
+        'click .toggleOff': -> selectedTags.remove @toString()
 
-        'click #clear': ->
-            selectedtags.clear()
+        'click .unselectAuthor': -> selectedAuthor.remove @toString()
 
+        'click #clear, click #home': ->
+            selectedTags.clear()
+            selectedAuthor.clear()
 
     Template.post.events
         'click #edit': (e,t)-> Session.set 'editing', @_id
@@ -88,8 +95,6 @@ if Meteor.isClient
         'click #save': (e,t)->
             if Session.equals 'adding', true then Session.set 'adding', false
             body = t.find('#codebody').value
-            #body = t.find('#editarea').value
-
             tags = $('.ui.multiple.dropdown').dropdown('get value')
             tagcount = tags.length
 
@@ -98,8 +103,8 @@ if Meteor.isClient
             Posts.update @_id, {$set: body: body, tags: loweredtags, tagcount: tagcount}, ->
             Session.set 'editing', null
 
-            selectedtags.clear()
-            loweredtags.forEach (tag)-> selectedtags.push tag
+            selectedTags.clear()
+            loweredtags.forEach (tag)-> selectedTags.push tag
 
         'click #cancel': ->
             if Session.equals 'adding', true then Session.set 'adding', false
@@ -111,15 +116,19 @@ if Meteor.isClient
 
         'click .posttag': (e)->
             Session.set 'editing', null
-            if @toString() not in selectedtags.array()
-                selectedtags.push @toString()
+            if @toString() not in selectedTags.array()
+                selectedTags.push @toString()
             else
-                selectedtags.remove @toString()
+                selectedTags.remove @toString()
+
+        'click .author': (e)->
+            if @author().username not in selectedAuthor.array() then selectedAuthor.push @author().username
+            else selectedAuthor.remove @author().username
 
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
         isAuthor: -> Meteor.userId() and Meteor.userId() is @authorId
-        posttagclass: -> if @valueOf() in selectedtags.array() then 'active' else ''
+        posttagclass: -> if @valueOf() in selectedTags.array() then 'active' else ''
 
 
     Template.edit.helpers
@@ -137,8 +146,8 @@ if Meteor.isClient
         $('#tagselector').dropdown
             allowAdditions: true
             placeholder: 'press enter after each tag'
-            #onAdd: (val)-> selectedtags.push val.toLowerCase()
-            #onRemove: (val)-> selectedtags.remove val.toLowerCase()
+            #onAdd: (val)-> selectedTags.push val.toLowerCase()
+            #onRemove: (val)-> selectedTags.remove val.toLowerCase()
         return
 
 if Meteor.isServer
@@ -149,17 +158,22 @@ if Meteor.isServer
 
     Meteor.publish 'people', -> Meteor.users.find {}, fields: username: 1
 
-    Meteor.publish 'tags', (selectedtags)->
+    Meteor.publish 'tags', (selectedTags, selectedAuthor)->
         self = @
         match = {}
-        if selectedtags?.length > 0 then match.tags= $all: selectedtags
+
+        if selectedTags?.length > 0 then match.tags = $all: selectedTags
+
+        if selectedAuthor?.length > 0
+            author = Meteor.users.findOne username: selectedAuthor[0]
+            match.authorId= author._id
 
         cloud = Posts.aggregate [
             { $match: match }
             { $project: tags: 1 }
             { $unwind: '$tags' }
             { $group: _id: '$tags', count: $sum: 1 }
-            { $match: _id: $nin: selectedtags }
+            { $match: _id: $nin: selectedTags }
             { $sort: count: -1, _id: 1 }
             { $limit: 100 }
             { $project: _id: 0, name: '$_id', count: 1 }
@@ -172,7 +186,15 @@ if Meteor.isServer
 
         self.ready()
 
-    Meteor.publish 'posts', (selectedtags, editing)->
-        if editing? then Posts.find editing
-        #else if selectedtags?.length > 0 then Posts.find {tags: $all: selectedtags}, limit: 1, sort: tagcount: 1 else null
-        else Posts.find {tags: $all: selectedtags}, limit: 10, sort: tagcount: 1
+    Meteor.publish 'posts', (selectedTags, selectedAuthor, editing)->
+        if editing? then return Posts.find editing
+
+        match = {}
+
+        if selectedTags.length > 0 then match.tags = $all: selectedTags else return null
+
+        if selectedAuthor?.length > 0
+            author = Meteor.users.findOne username: selectedAuthor[0]
+            match.authorId= author._id
+
+        return Posts.find match, limit: 10, sort: tagcount: 1

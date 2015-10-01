@@ -5,26 +5,26 @@ head
     meta(name='apple-mobile-web-app-capable', content='yes')
     meta(name='apple-mobile-web-app-status-bar-style', content='black')
     meta(name='format-detection', content='telephone=no')
-    link(rel="apple-touch-icon", sizes="57x57", href="/apple-touch-icon-57x57.png")
-    link(rel="apple-touch-icon", sizes="60x60", href="/apple-touch-icon-60x60.png")
-    link(rel="apple-touch-icon", sizes="72x72", href="/apple-touch-icon-72x72.png")
-    link(rel="apple-touch-icon", sizes="76x76", href="/apple-touch-icon-76x76.png")
-    link(rel="apple-touch-icon", sizes="114x114", href="/apple-touch-icon-114x114.png")
-    link(rel="apple-touch-icon", sizes="120x120", href="/apple-touch-icon-120x120.png")
-    link(rel="apple-touch-icon", sizes="144x144", href="/apple-touch-icon-144x144.png")
-    link(rel="apple-touch-icon", sizes="152x152", href="/apple-touch-icon-152x152.png")
-    link(rel="apple-touch-icon", sizes="180x180", href="/apple-touch-icon-180x180.png")
-    link(rel="icon", type="image/png", href="/favicon-32x32.png", sizes="32x32")
-    link(rel="icon", type="image/png", href="/favicon-194x194.png", sizes="194x194")
-    link(rel="icon", type="image/png", href="/favicon-96x96.png", sizes="96x96")
-    link(rel="icon", type="image/png", href="/android-chrome-192x192.png", sizes="192x192")
-    link(rel="icon", type="image/png", href="/favicon-16x16.png", sizes="16x16")
-    link(rel="manifest", href="/manifest.json")
-    meta(name="apple-mobile-web-app-title", content="facet")
-    meta(name="application-name", content="facet")
-    meta(name="msapplication-TileColor", content="#00a300")
-    meta(name="msapplication-TileImage", content="/mstile-144x144.png")
-    meta(name="theme-color", content="#ffffff")
+    link(rel='apple-touch-icon', sizes='57x57', href='/apple-touch-icon-57x57.png')
+    link(rel='apple-touch-icon', sizes='60x60', href='/apple-touch-icon-60x60.png')
+    link(rel='apple-touch-icon', sizes='72x72', href='/apple-touch-icon-72x72.png')
+    link(rel='apple-touch-icon', sizes='76x76', href='/apple-touch-icon-76x76.png')
+    link(rel='apple-touch-icon', sizes='114x114', href='/apple-touch-icon-114x114.png')
+    link(rel='apple-touch-icon', sizes='120x120', href='/apple-touch-icon-120x120.png')
+    link(rel='apple-touch-icon', sizes='144x144', href='/apple-touch-icon-144x144.png')
+    link(rel='apple-touch-icon', sizes='152x152', href='/apple-touch-icon-152x152.png')
+    link(rel='apple-touch-icon', sizes='180x180', href='/apple-touch-icon-180x180.png')
+    link(rel='icon', type='image/png', href='/favicon-32x32.png', sizes='32x32')
+    link(rel='icon', type='image/png', href='/favicon-194x194.png', sizes='194x194')
+    link(rel='icon', type='image/png', href='/favicon-96x96.png', sizes='96x96')
+    link(rel='icon', type='image/png', href='/android-chrome-192x192.png', sizes='192x192')
+    link(rel='icon', type='image/png', href='/favicon-16x16.png', sizes='16x16')
+    link(rel='manifest', href='/manifest.json')
+    meta(name='apple-mobile-web-app-title', content='facet')
+    meta(name='application-name', content='facet')
+    meta(name='msapplication-TileColor', content='#00a300')
+    meta(name='msapplication-TileImage', content='/mstile-144x144.png')
+    meta(name='theme-color', content='#ffffff')
 
 body
     unless $.Session.get 'editing'
@@ -33,22 +33,33 @@ body
         +posts
 
 template(name='nav')
-    .ui.secondary.segment
-        if currentUser
-            a#add.ui.basic.icon.circular.button: i.plus.icon
-        .ui.label
-            +loginButtons
+    .ui.menu
+        a#home.ui.item Facet
         .ui.input
-            +inputAutocomplete settings=settings id="search" class='' autofocus=''
-        if selectedtags
-            #clear.ui.circular.active.icon.basic.button: i.remove.icon
-        each selectedtags
-            #toggleOff.ui.active.basic.large.button #{this}
-        .taggies
-            each hundredtags
-                .ui.basic.button.hometag
-                    |#{this.name}
-                    small #{this.count}
+            +inputAutocomplete settings=settings id='search' class='' placeholder='search...' autofocus=''
+        .right.menu
+            if currentUser
+                a#mine.ui.item My Posts
+                a#add.ui.item
+                    i.plus.icon
+                    |Add
+            .ui.item
+                +loginButtons
+    .ui.secondary.segment
+        if somethingSelected
+            #clear.ui.circular.active.icon.basic.button
+                i.remove.icon
+                |Clear Selection
+        each selectedAuthor
+            .unselectAuthor.ui.basic.large.button
+                i.user.icon
+                strong #{this}
+        each selectedTags
+            .toggleOff.ui.active.basic.large.button #{this}
+        each hundredtags
+            .ui.basic.button.hometag
+                |#{this.name}
+                small #{this.count}
 
 template(name='posts')
     each posts
@@ -59,14 +70,19 @@ template(name='post')
     if editing
         +edit
     else
-        if isAuthor
-            a#edit.ui.basic.icon.circular.button: i.edit.icon
         each tags
             .ui.compact.basic.button.posttag(class=posttagclass) #{this}
+        |by
+        if isAuthor
+            |  Me
+            a#edit.ui.basic.icon.circular.button
+                i.edit.icon
+                |Edit This
+        else
+            .author.ui.compact.button #{author.username}
         .ui.hidden.fitted.divider
         +markdown
             #{body}
-        // .ui.hidden.divider
 
 template(name='edit')
     .content
@@ -76,7 +92,7 @@ template(name='edit')
                     each tags
                         option(value=this selected='selected') #{this}
             .field
-                +CodeMirror id="codebody" name="codemirror" options=editorOptions code=body
+                +CodeMirror id='codebody' name='codemirror' options=editorOptions code=body
         .ui.hidden.divider
         .bottomGroup
             #save.ui.basic.button save
