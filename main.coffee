@@ -22,7 +22,7 @@ if Meteor.isClient
         @subscribe 'people'
 
     Template.nav.helpers
-        displayedtags: -> Tags.find {}, limit: 20
+        displayedtags: -> Tags.find {}, limit: 50
         somethingSelected: -> selectedTags.list() or selectedAuthor.list()
         selectedTags: -> selectedTags.list()
         selectedAuthor: -> selectedAuthor.list()
@@ -105,7 +105,7 @@ if Meteor.isClient
     Template.post.events
         'click #edit': (e,t)-> Session.set 'editing', @_id
 
-        'click #clone': (e,t)->
+        'click .clone': (e,t)->
             cloneId = Posts.insert {
                 authorId: Meteor.userId()
                 timestamp: Date.now()
@@ -198,7 +198,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedTags }
             { $sort: count: -1, _id: 1 }
-            { $limit: 100 }
+            { $limit: 50 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
@@ -220,4 +220,4 @@ if Meteor.isServer
             author = Meteor.users.findOne username: selectedAuthor[0]
             match.authorId= author._id
 
-        return Posts.find match, limit: 10, sort: tagcount: 1
+        return Posts.find match, limit: 1, sort: tagcount: 1

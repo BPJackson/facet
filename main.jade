@@ -82,6 +82,9 @@ template(name='post')
             .author.ui.compact.button(class=authorButtonClass)
                 i.user.icon
                 |by #{author.username}
+            .clone.ui.compact.button
+                i.fork.icon
+                |Clone
         .ui.hidden.fitted.divider
         +markdown
             #{body}
