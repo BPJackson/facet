@@ -33,20 +33,16 @@ body
         +posts
 
 template(name='nav')
-    .ui.inverted.attached.menu
-        a#home.ui.item Facet
-        .item
-            .ui.input
-                +inputAutocomplete settings=settings id='search' class='' placeholder="search (or 'clear','mine')" autofocus=''
-        .right.menu
-            if currentUser
-                a#add.ui.item
-                    i.plus.icon
-                    |Add
-                a#mine.ui.item Mine
-            .ui.item
-                +loginButtons align='right'
     .ui.secondary.attached.segment
+        if currentUser
+            a#add.ui.button
+                i.plus.icon
+                |Add
+            a#mine.ui.button Mine
+        .ui.button
+            +loginButtons
+        .ui.input
+            +inputAutocomplete settings=settings id='search' class='' placeholder="search (or 'clear','mine')" autofocus=''
         if somethingSelected
             #clear.ui.circular.active.icon.button
                 i.remove.icon
@@ -82,9 +78,9 @@ template(name='post')
             .author.ui.compact.button(class=authorButtonClass)
                 i.user.icon
                 |by #{author.username}
-            .clone.ui.compact.button
-                i.fork.icon
-                |Clone
+        .clone.ui.circular.compact.button
+            i.fork.icon
+            |Clone
         .ui.hidden.fitted.divider
         +markdown
             #{body}

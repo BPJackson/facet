@@ -22,7 +22,7 @@ if Meteor.isClient
         @subscribe 'people'
 
     Template.nav.helpers
-        displayedtags: -> Tags.find {}, limit: 50
+        displayedtags: -> Tags.find {}, limit: 7
         somethingSelected: -> selectedTags.list() or selectedAuthor.list()
         selectedTags: -> selectedTags.list()
         selectedAuthor: -> selectedAuthor.list()
@@ -72,20 +72,18 @@ if Meteor.isClient
                     when 'logout'
                         Meteor.logout()
                         $('#search').val('')
-
             false
 
         'click #mine': -> if Meteor.user().username not in selectedAuthor.array() then selectedAuthor.push Meteor.user().username
 
-
         'click #add': ->
             Session.set 'adding', true
 
-            tags = selectedTags.array()
+            #tags = selectedTags.array()
             newId = Posts.insert {
                 authorId: Meteor.userId()
                 timestamp: Date.now()
-                tags: tags
+                #tags: tags
                 }
 
             Session.set 'editing', newId
@@ -198,7 +196,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedTags }
             { $sort: count: -1, _id: 1 }
-            { $limit: 50 }
+            #{ $limit: 50 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
