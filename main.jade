@@ -33,26 +33,25 @@ body
         +posts
 
 template(name='nav')
-    .ui.secondary.attached.segment
-        if currentUser
-            a#add.ui.button
-                i.plus.icon
-                |Add
-            a#mine.ui.button Mine
-        .ui.button
-            +loginButtons
-        .ui.input
-            +inputAutocomplete settings=settings id='search' class='' placeholder="search (or 'clear','mine')" autofocus=''
+    .ui.inverted.grey.attached.segment
+        .ui.icon.button.simple.dropdown
+            i.sidebar.icon
+            .ui.menu
+                if currentUser
+                    a#add.item Add
+                    a#mine.item Mine
+                .item
+                    +loginButtons
+        .ui.inverted.input
+            +inputAutocomplete settings=settings id='search' class='' placeholder="search or 'clear'" autofocus=''
         if somethingSelected
-            #clear.ui.circular.active.icon.button
-                i.remove.icon
-                // |Clear
+            #clear.ui.circular.icon.button: i.remove.icon
         each selectedAuthor
-            .unselectAuthor.ui.active.large.button
+            .unselectAuthor.ui.large.active.button
                 i.user.icon
                 strong #{this}
         each selectedTags
-            .toggleOff.ui.active.large.button #{this}
+            .toggleOff.ui.large.active.button #{this}
         each displayedtags
             .ui.button.hometag
                 |#{this.name}
