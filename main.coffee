@@ -148,7 +148,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedTags }
             { $sort: count: -1, _id: 1 }
-            { $limit: 7 }
+            { $limit: 100 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 
@@ -164,10 +164,11 @@ if Meteor.isServer
 
         match = {}
 
-        if selectedTags.length > 0 then match.tags = $all: selectedTags, $size: selectedTags.length else return null
+        #if selectedTags.length > 0 then match.tags = $all: selectedTags, $size: selectedTags.length else return null
+        if selectedTags.length > 0 then match.tags = $all: selectedTags else return null
 
         if selectedAuthor?.length > 0
             author = Meteor.users.findOne username: selectedAuthor[0]
             match.authorId= author._id
 
-        return Posts.find match, limit: 10, sort: tagcount: 1
+        return Posts.find match, limit: 7, sort: tagcount: 1

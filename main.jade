@@ -33,7 +33,7 @@ body
         +posts
 
 template(name='nav')
-    .ui.attached.inverted.menu
+    .ui.attached.menu
         a#clear.ui.item Facet
         .item
             +loginButtons
@@ -63,14 +63,15 @@ template(name='post')
     else
         each tags
             .ui.compact.button.posttag(class=posttagclass) #{this}
-        if isAuthor
-            a#edit.ui.icon.circular.button edit
-        else
-            .author.ui.button(class=authorButtonClass)
-                i.user.icon
-                |by #{author.username}
-        if currentUser
-            .clone.ui.circular.button clone
+        .actions
+            if isAuthor
+                a#edit.ui.icon.circular.button edit
+            else
+                .author.ui.button(class=authorButtonClass)
+                    i.user.icon
+                    |by #{author.username}
+            if currentUser
+                .clone.ui.circular.button clone
         .ui.hidden.fitted.divider
         +markdown
             #{body}
