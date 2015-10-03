@@ -39,8 +39,6 @@ template(name='nav')
         if currentUser
             #add.ui.compact.basic.button Add
             #mine.ui.compact.basic.button Mine
-        // .ui.inverted.input
-        //     +inputAutocomplete settings=settings id='search' class='' placeholder="search or 'clear'" autofocus=''
         if somethingSelected
             #clear.ui.circular.icon.button: i.remove.icon
         each selectedAuthor
@@ -64,19 +62,15 @@ template(name='post')
         +edit
     else
         each tags
-            .ui.compact.button.posttag(class=posttagclass) #{this}
+            .ui.basic.label #{this}
         .actions
             if isAuthor
-                a#edit.ui.icon.circular.button
-                    i.edit.icon
-                    |Edit
+                a#edit.ui.icon.circular.button edit
             else
                 .author.ui.button(class=authorButtonClass)
                     i.user.icon
                     |by #{author.username}
-            .clone.ui.circular.button
-                i.fork.icon
-                |Clone
+            .clone.ui.circular.button clone
         .ui.hidden.fitted.divider
         +markdown
             #{body}

@@ -26,54 +26,10 @@ if Meteor.isClient
         somethingSelected: -> selectedTags.list() or selectedAuthor.list()
         selectedTags: -> selectedTags.list()
         selectedAuthor: -> selectedAuthor.list()
-        settings: ->
-               {
-                position: 'bottom'
-                limit: 5
-                rules: [
-                    {
-                        collection: Tags
-                        field: 'name'
-                        template: Template.tagresult
-                    }
-                ]
-               }
 
     Template.posts.helpers posts: -> Posts.find {}
 
     Template.nav.events
-        'autocompleteselect input': (event, template, doc)->
-            selectedTags.push doc.name.toString()
-            $('input').val('')
-
-        'keyup #search': (event, template)->
-            code = event.which
-            if code is 13
-                val = $('#search').val()
-                switch val
-                    when 'clear'
-                        selectedTags.clear()
-                        selectedAuthor.clear()
-                        $('#search').val('')
-                    when 'add'
-                        Session.set 'adding', true
-                        tags = selectedTags.array()
-                        newId = Posts.insert {
-                            authorId: Meteor.userId()
-                            timestamp: Date.now()
-                            tags: tags
-                            }
-                        Session.set 'editing', newId
-                        $('#search').val('')
-                    when 'mine'
-                        if Meteor.user().username not in selectedAuthor.array()
-                            selectedAuthor.push Meteor.user().username
-                            $('#search').val('')
-                    when 'logout'
-                        Meteor.logout()
-                        $('#search').val('')
-            false
-
         'click #mine': -> if Meteor.user().username not in selectedAuthor.array() then selectedAuthor.push Meteor.user().username
 
         'click #add': ->
@@ -167,8 +123,6 @@ if Meteor.isClient
         $('#tagselector').dropdown
             allowAdditions: true
             placeholder: 'press enter after each tag'
-            #onAdd: (val)-> selectedTags.push val.toLowerCase()
-            #onRemove: (val)-> selectedTags.remove val.toLowerCase()
         return
 
 if Meteor.isServer
@@ -196,7 +150,7 @@ if Meteor.isServer
             { $group: _id: '$tags', count: $sum: 1 }
             { $match: _id: $nin: selectedTags }
             { $sort: count: -1, _id: 1 }
-            #{ $limit: 50 }
+            { $limit: 7 }
             { $project: _id: 0, name: '$_id', count: 1 }
             ]
 

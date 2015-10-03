@@ -36,12 +36,5 @@ constellation:position
 constellation:autopublish
 constellation:session
 perak:markdown
-mizzao:autocomplete
-mizzao:jquery-ui
 constellation:subscriptions
 babrahams:temple
-alon:lag-console
-fermuch:stats.js
-meteorhacks:kadira
-meteorhacks:kadira-debug
-datariot:ganalytics
