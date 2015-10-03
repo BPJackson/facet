@@ -33,24 +33,24 @@ body
         +posts
 
 template(name='nav')
-    .ui.secondary.attached.segment
-        .ui.compact.circular.basic.button
+    .ui.attached.inverted.menu
+        a#clear.ui.item Facet
+        .item
             +loginButtons
         if currentUser
-            #add.ui.compact.basic.button Add
-            #mine.ui.compact.basic.button Mine
-        if somethingSelected
-            #clear.ui.circular.icon.button: i.remove.icon
+            a#add.item Add
+            a#mine.item Mine
+    .ui.secondary.attached.segment
         each selectedAuthor
-            .unselectAuthor.ui.large.active.button
+            .unselectAuthor.ui.active.button
                 i.user.icon
                 strong #{this}
         each selectedTags
-            .toggleOff.ui.large.active.button #{this}
+            .toggleOff.ui.active.button #{this}
         each displayedtags
             .ui.button.hometag
                 |#{this.name}
-                // small #{this.count}
+                small #{this.count}
 
 template(name='posts')
     each posts
@@ -62,14 +62,14 @@ template(name='post')
         +edit
     else
         each tags
-            .ui.basic.label #{this}
-        .actions
-            if isAuthor
-                a#edit.ui.icon.circular.button edit
-            else
-                .author.ui.button(class=authorButtonClass)
-                    i.user.icon
-                    |by #{author.username}
+            .ui.compact.button.posttag(class=posttagclass) #{this}
+        if isAuthor
+            a#edit.ui.icon.circular.button edit
+        else
+            .author.ui.button(class=authorButtonClass)
+                i.user.icon
+                |by #{author.username}
+        if currentUser
             .clone.ui.circular.button clone
         .ui.hidden.fitted.divider
         +markdown
@@ -94,6 +94,3 @@ template(name='edit')
                     |Cancel
                 else
                     |Delete
-
-template(name='tagresult')
-    .ui.large.label #{name} #{count}

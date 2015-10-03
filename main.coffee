@@ -22,8 +22,7 @@ if Meteor.isClient
         @subscribe 'people'
 
     Template.nav.helpers
-        displayedtags: -> Tags.find {}, limit: 7
-        somethingSelected: -> selectedTags.list() or selectedAuthor.list()
+        displayedtags: -> Tags.find {}
         selectedTags: -> selectedTags.list()
         selectedAuthor: -> selectedAuthor.list()
 
@@ -50,10 +49,9 @@ if Meteor.isClient
 
         'click .unselectAuthor': -> selectedAuthor.remove @toString()
 
-        'click #clear, click #home': ->
+        'click #clear': ->
             selectedTags.clear()
             selectedAuthor.clear()
-            $('input').val('')
 
 
     Template.post.events
@@ -104,8 +102,8 @@ if Meteor.isClient
     Template.post.helpers
         editing: -> Session.equals 'editing', @_id
         isAuthor: -> Meteor.userId() and Meteor.userId() is @authorId
-        posttagclass: -> if @valueOf() in selectedTags.array() then 'active large' else ''
-        authorButtonClass: -> if @author().username in selectedAuthor.array() then 'large active' else ''
+        posttagclass: -> if @valueOf() in selectedTags.array() then 'active' else ''
+        authorButtonClass: -> if @author().username in selectedAuthor.array() then 'active' else ''
 
 
     Template.edit.helpers
@@ -166,10 +164,10 @@ if Meteor.isServer
 
         match = {}
 
-        if selectedTags.length > 0 then match.tags = $all: selectedTags else return null
+        if selectedTags.length > 0 then match.tags = $all: selectedTags, $size: selectedTags.length else return null
 
         if selectedAuthor?.length > 0
             author = Meteor.users.findOne username: selectedAuthor[0]
             match.authorId= author._id
 
-        return Posts.find match, limit: 1, sort: tagcount: 1
+        return Posts.find match, limit: 10, sort: tagcount: 1
