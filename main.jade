@@ -40,8 +40,9 @@ template(name='nav')
         if currentUser
             a#add.item Add
             a#mine.item Mine
-        .ui.inverted.input.item
-            +inputAutocomplete settings=settings id='search' class='' placeholder="search or 'clear'" autofocus=''
+        .item
+            .ui.inverted.input
+                +inputAutocomplete settings=settings id='search' class='' placeholder="search or 'clear'" autofocus=''
 
     .ui.secondary.attached.segment
         each selectedAuthor
