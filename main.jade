@@ -40,6 +40,9 @@ template(name='nav')
         if currentUser
             a#add.item Add
             a#mine.item Mine
+        .ui.inverted.input.item
+            +inputAutocomplete settings=settings id='search' class='' placeholder="search or 'clear'" autofocus=''
+
     .ui.secondary.attached.segment
         each selectedAuthor
             .unselectAuthor.ui.active.button
@@ -50,7 +53,7 @@ template(name='nav')
         each displayedtags
             .ui.button.hometag
                 |#{this.name}
-                small #{this.count}
+                // small #{this.count}
 
 template(name='posts')
     each posts
@@ -95,3 +98,7 @@ template(name='edit')
                     |Cancel
                 else
                     |Delete
+
+
+template(name='tagresult')
+    .ui.large.label #{name} #{count}

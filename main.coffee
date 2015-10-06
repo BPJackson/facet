@@ -25,10 +25,52 @@ if Meteor.isClient
         displayedtags: -> Tags.find {}
         selectedTags: -> selectedTags.list()
         selectedAuthor: -> selectedAuthor.list()
+        settings: -> {
+            position: 'bottom'
+            limit: 5
+            rules: [{
+                collection: Tags
+                field: 'name'
+                template: Template.tagresult
+                }]
+            }
 
     Template.posts.helpers posts: -> Posts.find {}
 
     Template.nav.events
+        'autocompleteselect input': (event, template, doc)->
+             selectedTags.push doc.name.toString()
+             $('input').val('')
+
+        'keyup #search': (event, template)->
+             code = event.which
+             if code is 13
+                 val = $('#search').val()
+                 switch val
+                     when 'clear'
+                         selectedTags.clear()
+                         selectedAuthor.clear()
+                         $('#search').val('')
+                     when 'add'
+                         Session.set 'adding', true
+                         tags = selectedTags.array()
+                         newId = Posts.insert {
+                             authorId: Meteor.userId()
+                             timestamp: Date.now()
+                             tags: tags
+                             }
+                         Session.set 'editing', newId
+                         $('#search').val('')
+                     when 'mine'
+                         if Meteor.user().username not in selectedAuthor.array()
+                             selectedAuthor.push Meteor.user().username
+                             $('#search').val('')
+                     when 'logout'
+                         Meteor.logout()
+                         $('#search').val('')
+         false
+
+
         'click #mine': -> if Meteor.user().username not in selectedAuthor.array() then selectedAuthor.push Meteor.user().username
 
         'click #add': ->
